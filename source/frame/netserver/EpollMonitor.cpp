@@ -208,7 +208,7 @@ bool EpollMonitor::WaitEvent( void *eventArray, int &count, bool block )
 				m_sigWaitAcceptSpace.Notify();
 				break;
 			}
-			events[count].sock = (SOCKET)pElement;
+			events[count].sock = (int64)pElement;
 			events[count++].type = epoll_accept;//发送事件
 		}
 		//先处理发送事件
@@ -220,7 +220,7 @@ bool EpollMonitor::WaitEvent( void *eventArray, int &count, bool block )
 				m_sigWaitOutSpace.Notify();
 				break;
 			}
-			events[count].sock = (SOCKET)pElement;
+			events[count].sock = (int64)pElement;
 			events[count++].type = epoll_out;//发送事件
 		}
 		//先处理接收事件
@@ -232,7 +232,7 @@ bool EpollMonitor::WaitEvent( void *eventArray, int &count, bool block )
 				m_sigWaitInSpace.Notify();
 				break;
 			}
-			events[count].sock = (SOCKET)pElement;
+			events[count].sock = (int64)pElement;
 			events[count++].type = epoll_in;//接收事件
 		}
 		if ( 0 < count ) break;
