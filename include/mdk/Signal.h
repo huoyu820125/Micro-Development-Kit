@@ -27,6 +27,7 @@
 #include <windows.h>
 #else
 #include <pthread.h>
+#include <semaphore.h>
 #endif
 
 
@@ -45,13 +46,10 @@ public:
 	
 private:
 #ifdef WIN32
-	HANDLE m_oneEvent;
-	HANDLE m_allEvent;
+	HANDLE m_signal;
 #else
-	int m_nSignal;
-	bool m_bNotifyAll;
-	pthread_cond_t m_cond;
-	pthread_mutex_t m_condMutex;
+	int m_waitCount;
+	sem_t m_signal;			
 #endif
 };
 
