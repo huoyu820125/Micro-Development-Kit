@@ -39,7 +39,7 @@ NetEngine::NetEngine()
 {
 	m_stop = true;//停止标志
 	m_startError = "";
-	m_nHeartTime = 0;//心跳间隔(S)
+	m_nHeartTime = 60;//心跳间隔(S)
 	m_nReconnectTime = 0;//默认不自动重连
 	m_pNetMonitor = NULL;
 	m_ioThreadCount = 16;//网络io线程数量
@@ -178,7 +178,7 @@ void NetEngine::HeartMonitor()
 	for ( it = m_connectList.begin(); m_nHeartTime > 0 && it != m_connectList.end(); )//心跳时间<=0无心跳机制,或遍历完成
 	{
 		pConnect = it->second;
-		if ( !pConnect->m_host.IsServer() ) //服务连接 ，不检查心跳
+		if ( pConnect->m_host.IsServer() ) //服务连接 ，不检查心跳
 		{
 			it++;
 			continue;
