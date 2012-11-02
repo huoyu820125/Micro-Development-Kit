@@ -62,6 +62,7 @@ int NetHost::ID()
 //放入某分组
 void NetHost::InGroup( int groupID )
 {
+	AutoLock lock(&m_groupMutex);
 	m_groups.insert(map<int,int>::value_type(groupID,groupID));
 }
 
@@ -69,6 +70,7 @@ void NetHost::InGroup( int groupID )
 void NetHost::OutGroup( int groupID )
 {
 	map<int,int>::iterator it;
+	AutoLock lock(&m_groupMutex);
 	it = m_groups.find(groupID);
 	if ( it == m_groups.end() ) return;
 	m_groups.erase(it);
