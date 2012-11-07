@@ -61,18 +61,10 @@ protected:
 		连接表
 		map<unsigned long,NetConnect*>
 		定时检查该列表中连接是有发送心跳，
-		将没有心跳的，断开连接，丢入m_closedConnects中等待释放
+		将没有心跳的连接断开
 	*/
 	ConnectList m_connectList;
-	/**
-		已断开的连接列表
-		vector<NetConnect*>
-		使用NetConnect::GetOwner()方法,确定对象是否存在访问。
-		定时检查该列表中对象是否已退出所有线程，执行释放
-	*/
-	ReleaseList m_closedConnects;
 	Mutex m_connectsMutex;//连接列表访问控制
-	Mutex m_closedConnectsMutex;//已关闭连接列表访问控制
 	int m_nHeartTime;//心跳间隔(S)
 	int m_nReconnectTime;//自动重连时间(S)
 	Thread m_mainThread;
@@ -118,7 +110,7 @@ private:
 	//心跳线程
 	void HeartMonitor();
 	//关闭一个连接，将socket从监听器中删除
-	NetConnect* CloseConnect( ConnectList::iterator it );
+	void CloseConnect( ConnectList::iterator it );
 
 	//////////////////////////////////////////////////////////////////////////
 	//服务端口

@@ -2,21 +2,24 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/atom.h"
 #include "frame/netserver/NetConnect.h"
 #include "frame/netserver/NetEventMonitor.h"
 #include "frame/netserver/NetEngine.h"
+#include "mdk/atom.h"
+#include "mdk/MemoryPool.h"
+using namespace std;
 
 namespace mdk
 {
 
-NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine)
-:m_socket(sock,Socket::tcp),m_host( bIsServer )
+NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool)
+:m_socket(sock,Socket::tcp)
 {
+	m_pMemoryPool = pMemoryPool;
+	m_useCount = 1;
 	m_pEngine = pEngine;
 	m_pNetMonitor = pNetMonitor;
 	m_id = m_socket.GetSocket();
-	m_uWorkAccessCount = 0;
 	m_host.m_pConnect = this;
 	m_nReadCount = 0;
 	m_bReadAble = false;
@@ -24,6 +27,7 @@ NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor
 	m_nSendCount = 0;//正在进行发送的线程数
 	m_bSendAble = false;//io缓冲中有数据需要发送
 	m_bConnect = true;//只有发现连接才创建对象，所以对象创建，就一定是连接状态
+	m_bIsServer = bIsServer;
 #ifdef WIN32
 	Socket::InitForIOCP(sock);	
 #endif
@@ -36,22 +40,22 @@ NetConnect::~NetConnect()
 
 }
 
-bool NetConnect::IsFree()
+static unsigned int g_cn = 0;
+void NetConnect::Release()
 {
-	if ( this->m_uWorkAccessCount > 0 ) return false;
-	return true;
-}
-
-void NetConnect::WorkAccess()
-{
-	AutoLock lock( &m_lockWorkAccessCount );
-	this->m_uWorkAccessCount++;
-}
-
-void NetConnect::WorkFinished()
-{
-	AutoLock lock( &m_lockWorkAccessCount );
-	this->m_uWorkAccessCount--;
+	if ( 1 == AtomDec(&m_useCount, 1) )
+	{
+		m_host.m_pConnect = NULL;
+		if ( NULL == m_pMemoryPool ) 
+		{
+			delete this;
+			return;
+		}
+		this->~NetConnect();
+		AtomAdd(&g_cn, 1);
+		printf( "release connect %d\n", g_cn );
+		m_pMemoryPool->Free(this);
+	}
 }
 
 void NetConnect::RefreshHeart()
@@ -162,12 +166,30 @@ void NetConnect::Close()
 	m_pEngine->CloseConnect(m_id);
 }
 
+bool NetConnect::IsServer()
+{
+	return m_bIsServer;
+}
+
+void NetConnect::InGroup( int groupID )
+{
+	m_groups.insert(map<int,int>::value_type(groupID,groupID));
+}
+
+void NetConnect::OutGroup( int groupID )
+{
+	map<int,int>::iterator it;
+	it = m_groups.find(groupID);
+	if ( it == m_groups.end() ) return;
+	m_groups.erase(it);
+}
+
 bool NetConnect::IsInGroups( int *groups, int count )
 {
 	int i = 0;
 	for ( i = 0; i < count; i++ )
 	{
-		if ( m_host.m_groups.end() != m_host.m_groups.find(groups[i]) ) return true;
+		if ( m_groups.end() != m_groups.find(groups[i]) ) return true;
 	}
 	
 	return false;

@@ -1,19 +1,35 @@
 #include "frame/netserver/NetHost.h"
 #include "frame/netserver/NetConnect.h"
 #include "mdk/Socket.h"
+#include "mdk/atom.h"
 using namespace std;
 
 namespace mdk
 {
 
-NetHost::NetHost( bool bIsServer )
+NetHost::NetHost()
 :m_pConnect(NULL)
 {
-	m_bIsServer = bIsServer;
+}
+
+NetHost::NetHost(const NetHost& obj)
+{
+	AtomAdd(&obj.m_pConnect->m_useCount, 1);
+	m_pConnect = obj.m_pConnect;
+}
+
+NetHost& NetHost::operator=(const NetHost& obj)
+{
+	if ( m_pConnect == obj.m_pConnect ) return *this;
+	if ( NULL != m_pConnect ) m_pConnect->Release();
+	AtomAdd(&obj.m_pConnect->m_useCount, 1);
+	m_pConnect = obj.m_pConnect;
+	return *this;
 }
 
 NetHost::~NetHost()
 {
+	if ( NULL != m_pConnect ) m_pConnect->Release();
 }
  
 bool NetHost::Send(const unsigned char* pMsg, unsigned short uLength)
@@ -37,21 +53,9 @@ void NetHost::Close()
 	m_pConnect->Close();
 }
 
-void NetHost::Hold()
-{
-	m_pConnect->WorkAccess();
-	return;
-}
-
-void NetHost::Free()
-{
-	m_pConnect->WorkFinished();
-	return;
-}
-
 bool NetHost::IsServer()
 {
-	return m_bIsServer;
+	return m_pConnect->IsServer();
 }
 
 int NetHost::ID()
@@ -62,18 +66,13 @@ int NetHost::ID()
 //放入某分组
 void NetHost::InGroup( int groupID )
 {
-	AutoLock lock(&m_groupMutex);
-	m_groups.insert(map<int,int>::value_type(groupID,groupID));
+	m_pConnect->InGroup(groupID);
 }
 
 //从某分组删除
 void NetHost::OutGroup( int groupID )
 {
-	map<int,int>::iterator it;
-	AutoLock lock(&m_groupMutex);
-	it = m_groups.find(groupID);
-	if ( it == m_groups.end() ) return;
-	m_groups.erase(it);
+	m_pConnect->OutGroup(groupID);
 }
 
 }  // namespace mdk

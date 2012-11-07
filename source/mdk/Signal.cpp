@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "mdk/Signal.h"
-#include "mdk/Atom.h"
+#include "mdk/atom.h"
 
 namespace mdk
 {

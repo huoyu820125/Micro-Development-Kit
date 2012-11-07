@@ -2,6 +2,7 @@
 #define MDK_C_NET_SERVER_H
 
 #include "mdk/Thread.h"
+#include "frame/netserver/NetHost.h"
 
 namespace mdk
 {
@@ -49,35 +50,26 @@ protected:
 	/**
 		有新连接进来，业务处理回调方法
 		参数：
-			pClient 连接进来的主机
+			host 连接进来的主机
 			用于数据io和一些其它主机操作，具体参考NetHost类
-
-			该指针在回调结束前，是绝对安全的，回调退出后，可能被引擎立刻释放。
-			如果希望保存指针，在需要时取出来使用，请参考NetHost::Hold()与NetHost::Free()
 	 */
-	virtual void OnConnect(NetHost* pClient){}
+	virtual void OnConnect(NetHost &host){}
 	/**
 		有连接断开，业务处理回调方法
 		参数：
-			pClient 连接断开的主机
+			host 连接断开的主机
 			用于调用ID()方法，标识断开对象，不必Close()，引擎已经Close()过了，
 			其它主机操作，具体参考NetHost类
-			
-			该指针在回调结束前，是绝对安全的，回调退出后，可能被引擎立刻释放。
-			如果希望保存指针，在需要时取出来使用，请参考NetHost::Hold()与NetHost::Free()
-	 */
-	virtual void OnCloseConnect(NetHost* pClient){}
+	*/
+	virtual void OnCloseConnect(NetHost &host){}
 	/**
 		有数据可读，业务处理回调方法
 		参数：
-			pClient 有数据可读的主机
+			host 有数据可读的主机
 			用于调用ID()方法，标识断开对象，不必Close()，引擎已经Close()过了，
 			其它主机操作，具体参考NetHost类
-
-			该指针在回调结束前，是绝对安全的，回调退出后，可能被引擎立刻释放。
-			如果希望保存指针，在需要时取出来使用，请参考NetHost::Hold()与NetHost::Free()
 	*/
-	virtual void OnMsg(NetHost* pClient){}
+	virtual void OnMsg(NetHost &host){}
 
 	/*
 		服务器状态检查，仅仅为main()方法中作为循环退出条件使用

@@ -14,7 +14,9 @@ namespace mdk
 Thread::Thread()
 {
 	m_bRun = false;
-#ifndef WIN32
+#ifdef WIN32
+	m_hHandle = NULL;
+#else
 	m_bStop = true;
 	int nError = 0;
 	pthread_mutexattr_t mutexattr;
@@ -106,6 +108,7 @@ void Thread::Stop( long lMillSecond )
 	{
 		TerminateThread( m_hHandle, 0 );
 	}
+	CloseHandle(m_hHandle);
 #else
 	if ( m_bStop ) 
 	{

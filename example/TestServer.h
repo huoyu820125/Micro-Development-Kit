@@ -10,7 +10,6 @@
 #endif // _MSC_VER > 1000
 
 #include "frame/netserver/NetServer.h"
-#include "frame/netserver/NetHost.h"
 
 class TestServer : public mdk::NetServer  
 {
@@ -30,21 +29,21 @@ protected:
 	 * 派生类实现具体连接业务处理
 	 * 
 	 */
-	void OnConnect(mdk::NetHost* pClient);
+	void OnConnect(mdk::NetHost& host);
 	/**
 	 * 连接关闭事件，回调方法
 	 * 
 	 * 派生类实现具体断开连接业务处理
 	 * 
 	 */
-	void OnCloseConnect(mdk::NetHost* pClient);
+	void OnCloseConnect(mdk::NetHost& host);
 	/**
 	 * 数据到达，回调方法
 	 * 
 	 * 派生类实现具体断开连接业务处理
 	 * 
 	*/
-	void OnMsg(mdk::NetHost* pClient);
+	void OnMsg(mdk::NetHost& host);
 	
 };
 

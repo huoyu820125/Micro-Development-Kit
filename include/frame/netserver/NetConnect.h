@@ -8,43 +8,31 @@
 #ifndef MDK_NETCONNECT_H
 #define MDK_NETCONNECT_H
 
-#include <time.h>
 #include "NetHost.h"
 #include "mdk/Lock.h"
 #include "mdk/IOBuffer.h"
 #include "mdk/Socket.h"
+
+#include <time.h>
+#include <map>
 
 namespace mdk
 {
 class NetEventMonitor;
 class Socket;
 class NetEngine;
+class MemoryPool;	
 class NetConnect  
 {
 	friend class NetEngine;
+	friend class NetHost;
 	friend class IOCPFrame;
 	friend class EpollFrame;
 public:
-	NetConnect(SOCKET sock, bool bIsConnectServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine);
+	NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool);
 	virtual ~NetConnect();
 
 public:
-	/**
-	 * 通信层接口
-	 * 取得拥有者
-	 * 释放线程访问确定可否释放
-	 */
-	bool IsFree();
-	/**
-	  业务层开始访问
-	  m_uWorkAccessCount++
-	 */
-	void WorkAccess();
-	/**
-	  业务层完成访问
-	  m_uWorkAccessCount--
-	 */
-	void WorkFinished();
 	/*
 	* 准备Buffer
 	* 为写入uLength长度的数据准备缓冲，
@@ -80,34 +68,13 @@ public:
 	//取得上次心跳时间
 	time_t GetLastHeart();
 	bool IsInGroups( int *groups, int count );//属于某些分组
+	bool IsServer();//主机是一个服务
+	void InGroup( int groupID );//放入某分组，同一个主机可多次调用该方法，放入多个分组，非线程安全
+	void OutGroup( int groupID );//从某分组删除，非线程安全
+	void Release();
 	
 private:
-	/**
-	 * 该对象当前拥有者
-	 * enum Owner类型
-	 * 0无拥有者可以释放
-	 * 1通信层
-	 * 2业务层
-	 * 
-	 * 对象从被创建开始，就应该设置为1
-	 * 对象被业务层保存到内存时候，应该设置为2
-	 * 对象被业务层从内存删除时，应该设置为1
-	 * 
-	 * 无访问且拥有者为网络层时，才能设置为0
-	 * （即每次退出业务操作和关闭网络连接时，应该检查访问计数与拥有者，决定是否应该将拥有者设置为0）
-	 * 关闭网络连接时候，如果2种访问计数都为0，而拥有者却是业务层，则一定是业务层逻辑忘记释放拥有属性，必须检查业务流程，清除
-	 * 因为网络访问计数为0了，则一定不会再引发业务访问，而业务访问为0了，最后一个业务操作应该是断开连接业务，业务层必须释放拥有属性
-	 * 
-	 * 不必加访问锁
-	 * 1.保证OnCloseConnect()一定在OnConnect()完成后才可能引发。
-	 * 如此就保证了，不会在出现业务层释放占有权限后，又获取占有权限，这点客户代码不用关心，都是网络层的事情
-	 * 
-	 * 2.从业务上保证业务层释放对象后，就不会再占有对象
-	 * 如此则保证了，访问计数为0时，可以安全的释放对象
-	 */
-	int m_owner;
-	unsigned int m_uWorkAccessCount;//业务层访问计数
-	Mutex m_lockWorkAccessCount;//业务层访问计数锁
+	int m_useCount;//访问计数
 	IOBuffer m_recvBuffer;//接收缓冲
 	int m_nReadCount;//正在进行读接收缓冲的线程数
 	bool m_bReadAble;//io缓冲中有数据可读
@@ -124,7 +91,10 @@ private:
 	int m_id;
 	NetHost m_host;
 	time_t m_tLastHeart;//最后一次收到心跳时间
-
+	bool m_bIsServer;//主机类型服务器
+	std::map<int,int> m_groups;//所属分组
+	MemoryPool *m_pMemoryPool;
+	
 };
 
 }//namespace mdk

@@ -196,34 +196,10 @@ void NetEngine::HeartMonitor()
 		it = m_connectList.begin();
 	}
 	lock.Unlock();
-	//////////////////////////////////////////////////////////////////////////
-	//释放连接
-	//将releaseList导入m_closedConnects
-	ReleaseList::iterator itRelease;
-	AutoLock lockRelease( &m_closedConnectsMutex );
-	for ( itRelease = releaseList.begin(); itRelease != releaseList.end(); itRelease++ )
-	{
-		m_closedConnects.push_back( *itRelease );
-	}
-	//释放连接
-	for ( itRelease = m_closedConnects.begin(); itRelease != m_closedConnects.end(); )
-	{
-		pConnect = *itRelease;
-		if ( !pConnect->IsFree() )//不是自由状态，不可以释放
-		{
-			itRelease++;
-			continue;
-		}
-		//释放一个对象
-		m_closedConnects.erase( itRelease );
-		itRelease = m_closedConnects.begin();
-		m_pConnectPool->Free(pConnect);
-		pConnect = NULL;
-	}
 }
 
 //关闭一个连接
-NetConnect* NetEngine::CloseConnect( ConnectList::iterator it )
+void NetEngine::CloseConnect( ConnectList::iterator it )
 {
 	/*
 	   必须先删除再关闭，顺序不能换，
@@ -234,33 +210,26 @@ NetConnect* NetEngine::CloseConnect( ConnectList::iterator it )
 	m_connectList.erase( it );
 	pConnect->GetSocket()->Close();
 	pConnect->m_bConnect = false;
-	pConnect->WorkAccess();
+	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	//执行业务NetServer::OnClose();
 	m_workThreads.Accept( Executor::Bind(&NetEngine::CloseWorker), this, pConnect);
-	return pConnect;
+	pConnect->Release();//连接断开释放共享对象
+	return;
 }
 
 bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 {
-	NetConnect *pConnect = new (m_pConnectPool->Alloc())NetConnect(sock, isConnectServer, m_pNetMonitor, this);
+	NetConnect *pConnect = new (m_pConnectPool->Alloc())NetConnect(sock, isConnectServer, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
 		closesocket(sock);
 		return false;
 	}
-	AutoLock lock( &m_connectsMutex );//必须在监听前加锁，否则，可能m_connectList.insert之前，其它线程就监听到OnData，无法在m_connectList中找到要使用的NetConnect对象
-	//监听连接
-	if ( !MonitorConnect(pConnect) )
-	{
-		closesocket(sock);
-		m_pConnectPool->Free(pConnect);
-		pConnect = NULL;
-		return false;
-	}
 	//加入管理列表
+	AutoLock lock( &m_connectsMutex );
 	pConnect->RefreshHeart();
-	pConnect->WorkAccess();
 	pair<ConnectList::iterator, bool> ret = m_connectList.insert( ConnectList::value_type(pConnect->GetSocket()->GetSocket(),pConnect) );
+	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	lock.Unlock();
 	//执行业务
 	m_workThreads.Accept( Executor::Bind(&NetEngine::ConnectWorker), this, pConnect );
@@ -269,8 +238,18 @@ bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 
 void* NetEngine::ConnectWorker( NetConnect *pConnect )
 {
-	m_pNetServer->OnConnect( &pConnect->m_host );
-	pConnect->WorkFinished();
+	m_pNetServer->OnConnect( pConnect->m_host );
+	pConnect->Release();//使用完毕释放共享对象
+	//监听连接
+	/*
+		 必须等OnConnect完成，才可以开始监听连接上的IO事件
+		 否则，可能业务层尚未完成连接初始化工作，就收到OnMsg通知，
+		 导致业务层不知道该如何处理消息
+	 */
+	if ( !MonitorConnect(pConnect) )
+	{
+		CloseConnect(pConnect->GetSocket()->GetSocket());
+	}
 	return 0;
 }
 
@@ -279,18 +258,15 @@ void NetEngine::OnClose( SOCKET sock )
 	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
 	if ( itNetConnect == m_connectList.end() )return;//底层已经主动断开
-	NetConnect *pConnect = CloseConnect( itNetConnect );
+	CloseConnect( itNetConnect );
 	lock.Unlock();
-
-	AutoLock lockRelease( &m_closedConnectsMutex );
-	m_closedConnects.push_back( pConnect );
 }
 
 void* NetEngine::CloseWorker( NetConnect *pConnect )
 {
 	SetServerClose(pConnect);//连接的服务断开
-	m_pNetServer->OnCloseConnect( &pConnect->m_host );
-	pConnect->WorkFinished();
+	m_pNetServer->OnCloseConnect( pConnect->m_host );
+	pConnect->Release();//使用完毕释放共享对象
 	return 0;
 }
 
@@ -303,20 +279,20 @@ connectState NetEngine::OnData( SOCKET sock, char *pData, unsigned short uSize )
 
 	NetConnect *pConnect = itNetConnect->second;
 	pConnect->RefreshHeart();
-	pConnect->WorkAccess();
+	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	lock.Unlock();//确保业务层占有对象后，HeartMonitor()才有机会检查pConnect的状态
 	try
 	{
 		cs = RecvData( pConnect, pData, uSize );//派生类实现
 		if ( unconnect == cs )
 		{
-			pConnect->WorkFinished();
+			pConnect->Release();//使用完毕释放共享对象
 			OnClose( sock );
 			return cs;
 		}
 		if ( 0 < AtomAdd(&pConnect->m_nReadCount, 1) ) //避免并发读
 		{
-			pConnect->WorkFinished();
+			pConnect->Release();//使用完毕释放共享对象
 			return cs;
 		}
 		//执行业务NetServer::OnMsg();
@@ -330,12 +306,12 @@ void* NetEngine::MsgWorker( NetConnect *pConnect )
 	for ( ; !m_stop; )
 	{
 		pConnect->m_nReadCount = 1;
-		m_pNetServer->OnMsg( &pConnect->m_host );//无返回值，避免框架逻辑依赖于客户实现
+		m_pNetServer->OnMsg( pConnect->m_host );//无返回值，避免框架逻辑依赖于客户实现
 		if ( !pConnect->m_bConnect ) break;
 		if ( pConnect->IsReadAble() ) continue;
 		if ( 1 == AtomDec(&pConnect->m_nReadCount,1) ) break;//避免漏接收
 	}
-	pConnect->WorkFinished();
+	pConnect->Release();//使用完毕释放共享对象
 	return 0;
 }
 
@@ -350,10 +326,7 @@ void NetEngine::CloseConnect( SOCKET sock )
 	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find( sock );
 	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
-	NetConnect *pConnect = CloseConnect( itNetConnect );
-				
-	AutoLock lockRelease( &m_closedConnectsMutex );
-	m_closedConnects.push_back( pConnect );
+	CloseConnect( itNetConnect );
 }
 
 //响应发送完成事件
@@ -364,7 +337,7 @@ connectState NetEngine::OnSend( SOCKET sock, unsigned short uSize )
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
 	if ( itNetConnect == m_connectList.end() )return cs;//底层已经主动断开
 	NetConnect *pConnect = itNetConnect->second;
-	pConnect->WorkAccess();
+	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	lock.Unlock();//确保业务层占有对象后，HeartMonitor()才有机会检查pConnect的状态
 	try
 	{
@@ -373,7 +346,7 @@ connectState NetEngine::OnSend( SOCKET sock, unsigned short uSize )
 	catch(...)
 	{
 	}
-	pConnect->WorkFinished();
+	pConnect->Release();//使用完毕释放共享对象
 	return cs;
 	
 }
@@ -547,7 +520,7 @@ void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int m
 		if ( !pConnect->IsInGroups(recvGroupIDs, recvCount) 
 			|| pConnect->IsInGroups(filterGroupIDs, filterCount) ) continue;
 		recverList.push_back(pConnect);
-		pConnect->WorkAccess();//业务层先获取访问
+		AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	}
 	lock.Unlock();
 	
@@ -557,7 +530,7 @@ void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int m
 	{
 		pConnect = *itv;
 		if ( pConnect->m_bConnect ) pConnect->SendData((const unsigned char*)msg,msgsize);
-		pConnect->WorkFinished();//释放访问
+		pConnect->Release();//使用完毕释放共享对象
 	}
 }
 
@@ -568,10 +541,10 @@ void NetEngine::SendMsg( int hostID, char *msg, int msgsize )
 	ConnectList::iterator itNetConnect = m_connectList.find(hostID);
 	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
 	NetConnect *pConnect = itNetConnect->second;
-	pConnect->WorkAccess();//业务层先获取访问
+	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	lock.Unlock();
 	if ( pConnect->m_bConnect ) pConnect->SendData((const unsigned char*)msg,msgsize);
-	pConnect->WorkFinished();//释放访问
+	pConnect->Release();//使用完毕释放共享对象
 
 	return;
 }
