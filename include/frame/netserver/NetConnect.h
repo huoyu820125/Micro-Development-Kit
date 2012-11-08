@@ -15,6 +15,7 @@
 
 #include <time.h>
 #include <map>
+#include <string>
 
 namespace mdk
 {
@@ -72,6 +73,15 @@ public:
 	void InGroup( int groupID );//放入某分组，同一个主机可多次调用该方法，放入多个分组，非线程安全
 	void OutGroup( int groupID );//从某分组删除，非线程安全
 	void Release();
+	/*
+		主机地址
+		NetConnect表示的是对方，所以自身地址就是对方地址
+	 */
+	void GetAddress( std::string &ip, int &port );//主机地址
+	/*
+		服务器地址
+	 */
+	void GetServerAddress( std::string &ip, int &port );
 	
 private:
 	int m_useCount;//访问计数
@@ -79,6 +89,7 @@ private:
 	int m_nReadCount;//正在进行读接收缓冲的线程数
 	bool m_bReadAble;//io缓冲中有数据可读
 	bool m_bConnect;//连接正常
+	int m_nDoCloseWorkCount;//NetServer::OnClose执行次数
 
 	IOBuffer m_sendBuffer;//发送缓冲
 	int m_nSendCount;//正在进行发送的线程数

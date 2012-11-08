@@ -27,11 +27,12 @@ NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor
 	m_nSendCount = 0;//正在进行发送的线程数
 	m_bSendAble = false;//io缓冲中有数据需要发送
 	m_bConnect = true;//只有发现连接才创建对象，所以对象创建，就一定是连接状态
+	m_nDoCloseWorkCount = 0;//没有执行过NetServer::OnClose()
 	m_bIsServer = bIsServer;
 #ifdef WIN32
 	Socket::InitForIOCP(sock);	
 #endif
-	m_socket.InitWanAddress();
+	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();
 }
 
@@ -40,7 +41,6 @@ NetConnect::~NetConnect()
 
 }
 
-static unsigned int g_cn = 0;
 void NetConnect::Release()
 {
 	if ( 1 == AtomDec(&m_useCount, 1) )
@@ -52,8 +52,6 @@ void NetConnect::Release()
 			return;
 		}
 		this->~NetConnect();
-		AtomAdd(&g_cn, 1);
-		printf( "release connect %d\n", g_cn );
 		m_pMemoryPool->Free(this);
 	}
 }
@@ -193,6 +191,20 @@ bool NetConnect::IsInGroups( int *groups, int count )
 	}
 	
 	return false;
+}
+
+void NetConnect::GetServerAddress( string &ip, int &port )
+{
+	if ( this->m_bIsServer ) m_socket.GetPeerAddress( ip, port );
+	else m_socket.GetLocalAddress( ip, port );
+	return;
+}
+
+void NetConnect::GetAddress( string &ip, int &port )
+{
+	if ( !this->m_bIsServer ) m_socket.GetPeerAddress( ip, port );
+	else m_socket.GetLocalAddress( ip, port );
+	return;
 }
 
 }//namespace mdk

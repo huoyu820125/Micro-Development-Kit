@@ -87,6 +87,7 @@ protected:
 	void* ConnectWorker( NetConnect *pConnect );//业务层处理连接
 	//响应关闭事件，sock为关闭的套接字
 	void OnClose( SOCKET sock );
+	void NotifyOnClose(NetConnect *pConnect);//发出OnClose通知
 	void* CloseWorker( NetConnect *pConnect );//业务层处理关闭
 	//响应数据到达事件，sock为有数据到达的套接字
 	connectState OnData( SOCKET sock, char *pData, unsigned short uSize );

@@ -26,7 +26,7 @@ Socket::Socket( SOCKET hSocket, protocol nProtocolType )
 	m_bBlock = true;
 	m_bOpened = false;//未打开状态
 	Init(nProtocolType);
-	InitWanAddress();
+	InitPeerAddress();
 	InitLocalAddress();
 }
 
@@ -115,14 +115,14 @@ SOCKET Socket::GetSocket()
 	return m_hSocket;
 }
 
-void Socket::GetWanAddress( string& strWanIP, int& nWanPort )
+void Socket::GetPeerAddress( string& strWanIP, int& nWanPort )
 { 
 	nWanPort = m_nWanPort;
 	strWanIP = m_strWanIP;
 	return;
 }
 
-bool Socket::InitWanAddress()
+bool Socket::InitPeerAddress()
 {
 	assert( INVALID_SOCKET != m_hSocket );
 
@@ -195,7 +195,7 @@ bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort)
 
 	if ( SOCKET_ERROR != connect(m_hSocket, (sockaddr*)&sockAddr, sizeof(sockAddr)) )
 	{
-		InitWanAddress();
+		InitPeerAddress();
 		InitLocalAddress();
 		return true;
 	}
@@ -245,7 +245,7 @@ void Socket::Attach(SOCKET hSocket)
 	m_hSocket = hSocket;
 	m_bBlock = true;
 	m_bOpened = true;//未打开状态
-	InitWanAddress();
+	InitPeerAddress();
 	InitLocalAddress();
 }
 
@@ -373,7 +373,7 @@ bool Socket::Accept(Socket& rConnectedSocket)
 		return false;//socket异常
 	}
 	rConnectedSocket.m_bOpened = true;
-	rConnectedSocket.InitWanAddress();
+	rConnectedSocket.InitPeerAddress();
 	rConnectedSocket.InitLocalAddress();
 	return true;
 }

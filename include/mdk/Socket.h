@@ -166,9 +166,9 @@ public:
 		无连接到达，该函数一样返回TRUE，而此时rConnectedSocket对象句柄将指向INVALID_SOCKET
 	*/
 	bool Accept(Socket& rConnectedSocket);
-	//取得外网地址
-	void GetWanAddress( std::string& strWanIP, int& nWanPort );
-	//取得内网地址
+	//取得对方地址
+	void GetPeerAddress( std::string& strWanIP, int& nWanPort );
+	//取得本方地址
 	void GetLocalAddress( std::string& strWanIP, int& nWanPort );
 	/*
 		功能：阻塞方式设置
@@ -219,10 +219,10 @@ public:
 	*/
 	SOCKET Detach();
 
-	//初始化外网地址
+	//初始化对方地址
 	//※只能在Connect之后调用
-	bool InitWanAddress();
-	//初始化内网地址
+	bool InitPeerAddress();
+	//初始化本方地址
 	//※只能在Connect之后调用
 	bool InitLocalAddress();
 	

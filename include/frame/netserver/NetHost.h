@@ -2,6 +2,7 @@
 #define MDK_NETHOST_H
 
 #include "mdk/FixLengthInt.h"
+#include <string>
 
 namespace mdk
 {
@@ -87,7 +88,18 @@ public:
 	bool IsServer();//主机是一个服务
 	void InGroup( int groupID );//放入某分组，同一个主机可多次调用该方法，放入多个分组
 	void OutGroup( int groupID );//从某分组删除
-	
+	/*
+		主机地址
+		如果你在NetServer希望得到对方地址，应该调用本方法，而不是GetServerAddress
+		因为NetHost表示的就是对方主机，所以NetHost的主机地址就是对方地址
+	 */
+	void GetAddress( std::string &ip, int &port );//主机地址
+	/*
+		服务器地址
+		如果你希望知道对方主机连接到自己的哪个端口，应该调用本方法，而不是GetAddress]
+		因为GetAddress表示的是对方
+	 */
+	void GetServerAddress( std::string &ip, int &port );
 private:
 	NetConnect* m_pConnect;//连接对象指针,调用NetConnect的业务层接口，屏蔽NetConnect的通信层接口
 	

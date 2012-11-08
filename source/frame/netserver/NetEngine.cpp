@@ -207,14 +207,62 @@ void NetEngine::CloseConnect( ConnectList::iterator it )
 	   系统立刻就把该连接分配给新client使用，造成新client在插入m_connectList时失败
 	*/
 	NetConnect *pConnect = it->second;
-	m_connectList.erase( it );
+	m_connectList.erase( it );//之后不可能有MsgWorker()发生，因为OnData里面已经找不到连接了
 	pConnect->GetSocket()->Close();
 	pConnect->m_bConnect = false;
-	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
-	//执行业务NetServer::OnClose();
-	m_workThreads.Accept( Executor::Bind(&NetEngine::CloseWorker), this, pConnect);
+	/*
+		执行业务NetServer::OnClose();
+		避免与未完成MsgWorker并发，(MsgWorker内部循环调用OnMsg())，也就是避免与OnMsg并发
+
+		与MsgWorker的并发情况分析
+		情况1：MsgWorker已经return
+			那么AtomAdd返回0，执行NotifyOnClose()，不可能发生在OnMsg之前，
+			之后也不可能OnMsg，前面已经说明MsgWorker()不可能再发生
+		情况2：MsgWorker未返回，分2种情况
+			情况1：这里先AtomAdd
+				必然返回非0，因为没有发生过AtomDec
+				不执行OnClose
+				遗漏OnClose？
+				不会！那么看MsgWorker()，AtomAdd返回非0，所以AtomDec必然返回>1，
+				MsgWorker()会再循环一次OnMsg（这次OnMsg是没有数据的，对用户没有影响
+				OnMsg读不到足够数据很正常），
+				然后退出循环，发现m_bConnect=false，于是NotifyOnClose()发出OnClose通知
+				OnClose通知没有被遗漏
+			情况2：MsgWorker先AtomDec
+				必然返回1，因为MsgWorker循环中首先置了1，而中间又没有AtomAdd发生
+				MsgWorker退出循环
+				发现m_bConnect=false，于是NotifyOnClose()发出OnClose通知
+				然后这里AtomAdd必然返回0，也NotifyOnClose()发出OnClose通知
+				重复通知？
+				不会，NotifyOnClose()保证了多线程并发调用下，只会通知1次
+
+		与OnData的并发情况分析
+			情况1：OnData先AtomAdd
+				保证有MsgWorker会执行
+				AtomAdd返回非0，放弃NotifyOnClose
+				MsgWorker一定会NotifyOnClose
+			情况2：这里先AtomAdd
+				OnData再AtomAdd时必然返回>0，OnData放弃MsgWorker
+				遗漏OnMsg？应该算做放弃数据，而不是遗漏
+				分3种断开情况
+				1.server发现心跳没有了，主动close，那就是网络原因，强制断开，无所谓数据丢失
+				2.client与server完成了所有业务，希望正常断开
+					那就应该按照通信行业连接安全断开的原则，让接收方主动Close
+					而不能发送方主动Close,所以不可能遗漏数据
+					如果发送放主动close，服务器无论如何设计，都没办法保证收到最后的这次数据
+	 */
+	if ( 0 == AtomAdd(&pConnect->m_nReadCount, 1) ) NotifyOnClose(pConnect);
 	pConnect->Release();//连接断开释放共享对象
 	return;
+}
+
+void NetEngine::NotifyOnClose(NetConnect *pConnect)
+{
+	if ( 0 == AtomAdd(&pConnect->m_nDoCloseWorkCount, 1) )//只有1个线程执行OnClose，且仅执行1次
+	{
+		AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
+		m_workThreads.Accept( Executor::Bind(&NetEngine::CloseWorker), this, pConnect);
+	}
 }
 
 bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
@@ -290,7 +338,27 @@ connectState NetEngine::OnData( SOCKET sock, char *pData, unsigned short uSize )
 			OnClose( sock );
 			return cs;
 		}
-		if ( 0 < AtomAdd(&pConnect->m_nReadCount, 1) ) //避免并发读
+		/*
+			避免并发MsgWorker，也就是避免并发读
+
+			与MsgWorker的并发情况分析
+			情况1：MsgWorker已经return
+				那么AtomAdd返回0，触发新的MsgWorker，未并发
+
+			情况2：MsgWorker未完成，分2种情况
+				情况1：这里先AtomAdd
+				必然返回非0，因为没有发生过AtomDec
+				放弃触发MsgWorker
+				遗漏OnMsg？
+				不会！那么看MsgWorker()，AtomAdd返回非0，所以AtomDec必然返回>1，
+				MsgWorker()会再循环一次OnMsg
+				没有遗漏OnMsg，无并发
+			情况2：MsgWorker先AtomDec
+				必然返回1，因为MsgWorker循环中首先置了1，而中间又没有AtomAdd发生
+				MsgWorker退出循环
+				然后这里AtomAdd，必然返回0，触发新的MsgWorker，未并发
+		 */
+		if ( 0 < AtomAdd(&pConnect->m_nReadCount, 1) ) 
 		{
 			pConnect->Release();//使用完毕释放共享对象
 			return cs;
@@ -311,6 +379,8 @@ void* NetEngine::MsgWorker( NetConnect *pConnect )
 		if ( pConnect->IsReadAble() ) continue;
 		if ( 1 == AtomDec(&pConnect->m_nReadCount,1) ) break;//避免漏接收
 	}
+	//触发OnClose(),确保NetServer::OnClose()一定在所有NetServer::OnMsg()完成之后
+	if ( !pConnect->m_bConnect ) NotifyOnClose(pConnect);
 	pConnect->Release();//使用完毕释放共享对象
 	return 0;
 }
