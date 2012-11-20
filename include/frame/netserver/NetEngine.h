@@ -81,14 +81,14 @@ protected:
 protected:
 	//网络事件监听线程
 	virtual void* NetMonitor( void* ) = 0;
-	void* NetMonitorTask( void* );
+	void* RemoteCall NetMonitorTask( void* );
 	//响应连接事件,sock为新连接的套接字
 	bool OnConnect( SOCKET sock, bool isConnectServer );
-	void* ConnectWorker( NetConnect *pConnect );//业务层处理连接
+	void* RemoteCall ConnectWorker( NetConnect *pConnect );//业务层处理连接
 	//响应关闭事件，sock为关闭的套接字
 	void OnClose( SOCKET sock );
 	void NotifyOnClose(NetConnect *pConnect);//发出OnClose通知
-	void* CloseWorker( NetConnect *pConnect );//业务层处理关闭
+	void* RemoteCall CloseWorker( NetConnect *pConnect );//业务层处理关闭
 	//响应数据到达事件，sock为有数据到达的套接字
 	connectState OnData( SOCKET sock, char *pData, unsigned short uSize );
 	/*
@@ -97,7 +97,7 @@ protected:
 		因具体响应器差别，需要派生类中实现
 	*/
 	virtual connectState RecvData( NetConnect *pConnect, char *pData, unsigned short uSize );
-	void* MsgWorker( NetConnect *pConnect );//业务层处理消息
+	void* RemoteCall MsgWorker( NetConnect *pConnect );//业务层处理消息
 	connectState OnSend( SOCKET sock, unsigned short uSize );//响应发送事件
 	virtual connectState SendData(NetConnect *pConnect, unsigned short uSize);//发送数据
 	virtual bool MonitorConnect(NetConnect *pConnect);//监听连接
@@ -107,7 +107,7 @@ protected:
 	void SendMsg( int hostID, char *msg, int msgsize );//向某主机发送消息(业务层接口)
 private:
 	//主线程
-	void* Main(void*);
+	void* RemoteCall Main(void*);
 	//心跳线程
 	void HeartMonitor();
 	//关闭一个连接，将socket从监听器中删除

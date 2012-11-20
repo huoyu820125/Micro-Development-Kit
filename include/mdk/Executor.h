@@ -26,6 +26,10 @@
 #define NULL 0
 #endif
 
+#ifndef WIN32
+#define __stdcall 
+#endif
+#define RemoteCall __stdcall
 
 namespace mdk
 {

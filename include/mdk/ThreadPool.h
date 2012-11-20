@@ -57,7 +57,7 @@ protected:
 	bool CreateThread(unsigned short nNum);//在线程池中创建n个线程
 	THREAD_CONTEXT* CreateContext();//创建一个上下文
 	void ReleaseContext(THREAD_CONTEXT *pContext);//释放一个上下文
-	void* ThreadFunc(void* pParam);//线程函数
+	void* RemoteCall ThreadFunc(void* pParam);//线程函数
 	Task* CreateTask();//创建一个任务
 	void ReleaseTask(Task *pTask);//释放一个任务
 	void PushTask(Task* pTask);//将任务放入线程池执行。※注：pTask必须是new出来的对象，alloc都不行

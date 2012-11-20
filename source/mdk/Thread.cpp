@@ -4,10 +4,6 @@
 #include "mdk/Thread.h"
 #include <stdio.h>
 
-#ifndef WIN32
-#define __stdcall 
-#endif
-
 namespace mdk
 {
 

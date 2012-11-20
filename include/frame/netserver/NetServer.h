@@ -28,7 +28,8 @@ private:
 	bool m_bStop;
 	
 protected:
-	void* TMain(void* pParam);
+public:
+	void* RemoteCall TMain(void* pParam);
 	/*
 		服务器启动主业务处理回调方法
 		

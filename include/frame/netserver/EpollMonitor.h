@@ -53,10 +53,10 @@ public:
 	
 protected:
 	void SheildSigPipe();//屏蔽SIGPIPE信号，避免进程被该信号关闭
-	void* WaitAcceptEvent( void *pData );
-	void* WaitInEvent( void *pData );
+	void* RemoteCall WaitAcceptEvent( void *pData );
+	void* RemoteCall WaitInEvent( void *pData );
 	bool DelMonitorIn( SOCKET sock );
-	void* WaitOutEvent( void *pData );
+	void* RemoteCall WaitOutEvent( void *pData );
 	bool DelMonitorOut( SOCKET sock );
 		
 	

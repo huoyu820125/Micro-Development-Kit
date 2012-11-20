@@ -4,10 +4,6 @@
 
 #include "mdk/Executor.h"
 
-#ifndef WIN32
-#define __stdcall 
-#endif
-
 namespace mdk
 {
 	
@@ -40,7 +36,7 @@ namespace mdk
 	}
 	
 Executor::Executor()
-{	
+{
 }
 
 Executor::~Executor()
@@ -51,7 +47,7 @@ Executor::~Executor()
 void* Executor::CallMethod( MethodPointer method, void *pObj, void *pParam )
 {
 #ifdef WIN32
-	return WinCall( method, pObj, pParam );
+	return LinuxCall( method, pObj, pParam );
 #else
 	return LinuxCall( method, pObj, pParam );
 #endif
