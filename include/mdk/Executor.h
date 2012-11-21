@@ -3,14 +3,14 @@
 //////////////////////////////////////////////////////////////////////
 /*
 	执行器类
-	用于执行对象内声明为void* fun(void*)的成员函数
+	用于执行对象内声明为void* RemoteCall fun(void*)的成员函数
 	※fun不能是虚函数
 	
     使用方法
 	class A
 	{
 		...
-		void* fun(void*);
+		void* RemoteCall fun(void*);
 	}
 	A a;
 	//linux下必须&A::fun，windows下可使用A::fun，A类函数内部直接fun皆可

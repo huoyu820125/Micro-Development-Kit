@@ -13,12 +13,12 @@
 	class A
 	{
 		...
-		void* fun(void*);
+		void* RemoteCall fun(void*);
 	}
 	A a;
 	
 	mdk::Thread t;
-	//linux下必须&A::fun，windows下可使用A::fun，A类函数内部直接fun皆可
+	//linux下必须&A::fun，windows下可使用A::fun
 	//为了移植性，建议传递&A::fun给Bind
 	t.Run( mdk::Executor::Bind(&A::fun), &a, (void*)param );
 	mdk::Thread t2;
