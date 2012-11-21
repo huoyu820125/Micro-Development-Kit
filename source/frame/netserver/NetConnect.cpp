@@ -78,7 +78,7 @@ void NetConnect::WriteFinished(unsigned short uLength)
 
 bool NetConnect::IsReadAble()
 {
-	return m_bReadAble;
+	return m_bReadAble && 0 < m_recvBuffer.GetLength();
 }
 
 uint32 NetConnect::GetLength()

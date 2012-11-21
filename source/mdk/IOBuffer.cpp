@@ -85,7 +85,7 @@ bool IOBuffer::ReadData( unsigned char *data, int uLength, bool bDel )
 	//这里检查m_uDataSize不需要原子操作
 	//cpu与内存1次交换最小长度就是4byte,对于小于等于4byte的类型的取值/赋值操作，
 	//本身就是原子操作
-	if ( 0 > uLength || m_uDataSize < uLength ) return false;//读取长度小于0，或数据不够，不执行读取
+	if ( 0 >= uLength || m_uDataSize < uLength ) return false;//读取长度小于0，或数据不够，不执行读取
 
 	//读取数据
 	IOBufferBlock *pRecvBlock = NULL;
