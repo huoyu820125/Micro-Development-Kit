@@ -185,7 +185,7 @@ bool ConfigFile::ReadFile()
 	return true;
 }
 
-ConfigFile::CFGItem& ConfigFile::operator []( std::string key )
+CFGItem& ConfigFile::operator []( std::string key )
 {
 	assert( "" != key );
 	ConfigMap::iterator it = m_content.find( key );
