@@ -40,7 +40,6 @@ void IOBuffer::AddBuffer()
 unsigned char* IOBuffer::PrepareBuffer(unsigned short uRecvSize)
 {
 	if ( uRecvSize > BUFBLOCK_SIZE ) return NULL;
-//	AutoLock lock( &m_mutex );
 	if ( NULL == m_pRecvBufferBlock ) AddBuffer();//创建第一块缓冲块
 	unsigned char* pWriteBuf = m_pRecvBufferBlock->PrepareBuffer( uRecvSize );
 	//剩余缓冲不足以保存希望写入的数据长度，增加缓冲块

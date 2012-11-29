@@ -22,6 +22,7 @@ NetServer::NetServer()
  
 NetServer::~NetServer()
 {
+	delete m_pNetCard;
 }
 
 void* NetServer::TMain(void* pParam)

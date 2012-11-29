@@ -64,7 +64,6 @@ bool Thread::Run( void *pParam )
 	if ( NULL == m_hHandle ) return false;
 #else
 	m_bStop = false;
-	// pthread_create( &m_nID, NULL, TMain, this );//非分离状态的线程，结束时必须pthread_join(m_nID,NULL)
 	// 分离状态的线程，结束时不需要pthread_join
 	pthread_attr_t attr;
 	pthread_attr_init (&attr);

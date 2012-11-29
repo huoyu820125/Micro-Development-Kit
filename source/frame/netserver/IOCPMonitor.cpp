@@ -148,9 +148,7 @@ bool IOCPMonitor::AddAccept( SOCKET listenSocket )
 #ifdef WIN32
 	if ( SOCKET_ERROR == listenSocket ) return false;
 	//创建参数
-//	AutoLock lock ( &m_lockIocpDataPool );
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;
-//	lock.Unlock();
 	if ( NULL == pOverlapped ) return false;
 	memset( &pOverlapped->m_overlapped, 0, sizeof(OVERLAPPED) );
 	pOverlapped->m_dwLocalAddressLength = sizeof(SOCKADDR_IN) + 16;//客户端局域网IP
@@ -187,9 +185,7 @@ bool IOCPMonitor::AddAccept( SOCKET listenSocket )
 bool IOCPMonitor::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize )
 {
 #ifdef WIN32
-//	AutoLock lock ( &m_lockIocpDataPool );
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;
-//	lock.Unlock();
 	if ( NULL == pOverlapped )return false;
 	memset( &pOverlapped->m_overlapped, 0, sizeof(OVERLAPPED) );
 	pOverlapped->m_wsaBuffer.buf = recvBuf;
@@ -224,9 +220,7 @@ bool IOCPMonitor::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize 
 bool IOCPMonitor::AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize )
 {
 #ifdef WIN32
-//	AutoLock lock ( &m_lockIocpDataPool );
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;
-//	lock.Unlock();
 	if ( NULL == pOverlapped ) return false;
 	memset( &pOverlapped->m_overlapped, 0, sizeof(OVERLAPPED) );
 	pOverlapped->m_wsaBuffer.buf = dataBuf;

@@ -9,19 +9,7 @@
 	信号类
 	效果
 	如果没有线程在等待
-	NotifyAll会丢失
-	Notify不会丢失
-
-	windows linux差别
-	如果NotifyAll时候，另外一个线程正在调Wait，
-	这个NotifyAll在windows下可能会丢失
-	(因为windows下的Wait会将信号重置为无，然后再等待，
-	如果NotifyAll之后，别的线程激活之前，
-	正在调用Wait的线程抢先得到cpu时间片，将信号重置了，则Notifyall丢失)
-
-	在linux不会丢失
-	
-
+	多次Notify，只会保留第1次有效，之后全部丢失
 */
 #ifdef WIN32
 #include <windows.h>
@@ -42,7 +30,6 @@ public:
 
 	bool Wait( unsigned long nMillSecond = (unsigned long)-1 );
 	bool Notify();
-	bool NotifyAll();
 	
 private:
 #ifdef WIN32
