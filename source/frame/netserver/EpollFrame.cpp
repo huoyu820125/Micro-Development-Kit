@@ -113,7 +113,8 @@ connectState EpollFrame::RecvData( NetConnect *pConnect, char *pData, unsigned s
 	unsigned char* pWriteBuf = NULL;	
 	int nRecvLen = 0;
 	unsigned int nMaxRecvSize = 0;
-	while ( nMaxRecvSize < 4096 )
+	//最多接收1M数据，让给其它连接进行io
+	while ( nMaxRecvSize < 1048576 )
 	{
 		pWriteBuf = pConnect->PrepareBuffer(BUFBLOCK_SIZE);
 		nRecvLen = pConnect->GetSocket()->Receive(pWriteBuf, BUFBLOCK_SIZE);

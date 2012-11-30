@@ -22,8 +22,6 @@ class NetEventMonitor;
 class NetServer;
 class MemoryPool;
 typedef std::map<SOCKET,NetConnect*> ConnectList;
-typedef std::vector<NetConnect*> ReleaseList;
-	
 /**
  * 服务器通信引擎类
  * 通信层对象类型

@@ -162,23 +162,19 @@ void* NetEngine::Main(void*)
 //心跳线程
 void NetEngine::HeartMonitor()
 {
+	if ( m_nHeartTime <= 0 ) return;//无心跳机制
 	//////////////////////////////////////////////////////////////////////////
 	//关闭无心跳的连接
 	ConnectList::iterator it;
 	NetConnect *pConnect;
 	time_t tCurTime = 0;
-	/*	
-		创建一个临时的释放列表保存要释放的对象，等遍历结束1次性导入等待释放对象列表
-		避免在循环中因为重复的为等待释放列表的访问而加锁解所
-	 */
-	ReleaseList releaseList;
 	tCurTime = time( NULL );
 	time_t tLastHeart;
 	AutoLock lock( &m_connectsMutex );
-	for ( it = m_connectList.begin(); m_nHeartTime > 0 && it != m_connectList.end(); )//心跳时间<=0无心跳机制,或遍历完成
+	for ( it = m_connectList.begin();  it != m_connectList.end(); )
 	{
 		pConnect = it->second;
-		if ( pConnect->m_host.IsServer() ) //服务连接 ，不检查心跳
+		if ( pConnect->m_host.IsServer() ) //服务连接，不检查心跳
 		{
 			it++;
 			continue;
@@ -190,9 +186,8 @@ void NetEngine::HeartMonitor()
 			it++;
 			continue;
 		}
-		//无心跳/连接已断开，强制断开连接，加入释放列表
+		//无心跳/连接已断开，强制断开连接
 		CloseConnect( it );
-		releaseList.push_back( pConnect );
 		it = m_connectList.begin();
 	}
 	lock.Unlock();

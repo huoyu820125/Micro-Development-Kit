@@ -1,7 +1,7 @@
 #ifndef MDK_IOBUFFERBLOCK_H
 #define MDK_IOBUFFERBLOCK_H
 
-#define BUFBLOCK_SIZE 256
+#define BUFBLOCK_SIZE 8192
 #include <stddef.h>
 
 namespace mdk
