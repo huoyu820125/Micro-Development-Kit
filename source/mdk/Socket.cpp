@@ -361,8 +361,7 @@ bool Socket::Listen( int nConnectionBacklog )
 bool Socket::Accept(Socket& rConnectedSocket)
 {
 	assert( INVALID_SOCKET == rConnectedSocket.m_hSocket );
-	socklen_t sockAddLen = 0;
-	rConnectedSocket.m_hSocket = accept(m_hSocket, NULL, &sockAddLen);
+	rConnectedSocket.m_hSocket = accept(m_hSocket, NULL, NULL);
 	if ( INVALID_SOCKET == rConnectedSocket.m_hSocket )
 	{
 #ifdef WIN32
