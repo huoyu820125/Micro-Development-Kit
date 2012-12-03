@@ -171,7 +171,7 @@ connectState EpollFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 		connectState cs = wait_send;//默认为等待状态
 		//////////////////////////////////////////////////////////////////////////
 		//执行发送
-		unsigned char buf[4096];
+		unsigned char buf[BUFBLOCK_SIZE];
 		int nSize = 0;
 		int nSendSize = 0;
 		int nFinishedSize = 0;
@@ -180,11 +180,11 @@ connectState EpollFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 		{
 			nSize = 0;
 			//一次发送4096byte
-			if ( 4096 < nSendSize )//1次发不完，设置为就绪状态
+			if ( BUFBLOCK_SIZE < nSendSize )//1次发不完，设置为就绪状态
 			{
-				pConnect->m_sendBuffer.ReadData(buf, 4096, false);
-				nSize += 4096;
-				nSendSize -= 4096;
+				pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
+				nSize += BUFBLOCK_SIZE;
+				nSendSize -= BUFBLOCK_SIZE;
 				cs = ok;
 			}
 			else//1次可发完，设置为等待状态

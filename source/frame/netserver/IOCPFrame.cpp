@@ -79,7 +79,7 @@ connectState IOCPFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 {
 	try
 	{
-		unsigned char buf[256];
+		unsigned char buf[BUFBLOCK_SIZE];
 		if ( uSize > 0 ) pConnect->m_sendBuffer.ReadData(buf, uSize);
 		int nLength = pConnect->m_sendBuffer.GetLength();
 		if ( 0 >= nLength ) 
@@ -105,10 +105,10 @@ connectState IOCPFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 			//发送流程开始
 		}
 
-		if ( nLength > 256 )
+		if ( nLength > BUFBLOCK_SIZE )
 		{
-			pConnect->m_sendBuffer.ReadData(buf, 256, false);
-			m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, 256 );
+			pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
+			m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, BUFBLOCK_SIZE );
 		}
 		else
 		{

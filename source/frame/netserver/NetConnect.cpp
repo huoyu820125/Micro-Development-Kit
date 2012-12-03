@@ -112,13 +112,13 @@ bool NetConnect::SendData( const unsigned char* pMsg, unsigned short uLength )
 		uLength -= nSendSize;
 		while ( true )
 		{
-			if ( uLength > 256 )
+			if ( uLength > BUFBLOCK_SIZE )
 			{
-				ioBuf = m_sendBuffer.PrepareBuffer( 256 );
-				memcpy( ioBuf, &pMsg[nSendSize], 256 );
-				m_sendBuffer.WriteFinished( 256 );
-				nSendSize += 256;
-				uLength -= 256;
+				ioBuf = m_sendBuffer.PrepareBuffer( BUFBLOCK_SIZE );
+				memcpy( ioBuf, &pMsg[nSendSize], BUFBLOCK_SIZE );
+				m_sendBuffer.WriteFinished( BUFBLOCK_SIZE );
+				nSendSize += BUFBLOCK_SIZE;
+				uLength -= BUFBLOCK_SIZE;
 			}
 			else
 			{
