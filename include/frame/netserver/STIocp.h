@@ -1,4 +1,4 @@
-// IOCPMonitor.h: interface for the IOCPMonitor class.
+// STIocp.h: interface for the STIocp class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -6,7 +6,6 @@
 #define MDK_IOCPMONITOR_H
 
 #ifdef WIN32
-//#define   _WIN32_WINNT   0x0400 
 #include <winsock2.h>  
 #include <mswsock.h>
 #include <windows.h>
@@ -22,7 +21,10 @@ typedef int OVERLAPPED;
 #include "mdk/MemoryPool.h"
 #include "mdk/Lock.h"
 
-
+/*
+ *	IOCP封装(单线程)
+ *	主要是WaitEvent提供超时参数，不占用线程
+*/
 namespace mdk
 {
 	//套接字类型
@@ -33,7 +35,7 @@ namespace mdk
 	};
 	
 		
-class IOCPMonitor : public NetEventMonitor  
+class STIocp : public NetEventMonitor  
 {
 public:
 	enum EventType
@@ -43,6 +45,8 @@ public:
 			close = 2,
 			recv = 3,
 			send = 4,
+			timeout = 5,
+			stop = 6,
 	};
 	typedef struct IO_EVENT
 	{
@@ -86,15 +90,18 @@ public:
 		EventType completiontype;//完成类型1recv 2send
 	}IOCP_OVERLAPPED;
 public:
-	IOCPMonitor();
-	virtual ~IOCPMonitor();
+	STIocp();
+	virtual ~STIocp();
 public:
 	//开始监听
 	bool Start( int nMaxMonitor );
+	//停止监听
+	bool Stop();
 	//增加一个监听对象
 	bool AddMonitor( SOCKET socket );
-	//等待事件发生,block无作用
-	bool WaitEvent( void *eventArray, int &count, bool block );
+	//等待事件，失败返回false,超时sockEvent.type = STIocp::timeout,外部调用了Stop()，sockEvent.type = STIocp::stop
+	//timeout超时时间：INFINITE不超时，0不等待，>0超时时间单位(千分之一秒)
+	bool WaitEvent( IO_EVENT &sockEvent, int timeout );
 	//增加一个接受连接的操作，有连接进来，WaitEvent会返回
 	bool AddAccept(SOCKET listenSocket);
 	//增加一个接收数据的操作，有数据到达，WaitEvent会返回
@@ -108,6 +115,7 @@ private:
 	SOCKET m_listenSocket;
 	HANDLE m_hCompletPort;//完成端口句柄
 	int m_nCPUCount;
+	IOCP_OVERLAPPED m_olExit;
 };
 
 }//namespace mdk
