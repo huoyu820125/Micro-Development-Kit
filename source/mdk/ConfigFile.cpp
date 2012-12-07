@@ -115,7 +115,7 @@ ConfigFile::ConfigFile( const char *strName )
 
 ConfigFile::~ConfigFile()
 {
-	Close();
+	Save();
 }
 
 //╧ь╠унд╪Ч
