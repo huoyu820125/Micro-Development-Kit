@@ -18,6 +18,7 @@
 #include "mdk/Socket.h"
 #include "mdk/atom.h"
 #include "mdk/MemoryPool.h"
+#include "mdk/mapi.h"
 
 #include "frame/netserver/STNetEngine.h"
 #include "frame/netserver/STNetConnect.h"
@@ -26,8 +27,6 @@
 using namespace std;
 namespace mdk
 {
-bool addrToI64(uint64 &addr64, const char* ip, int port);
-void i64ToAddr(char* ip, int &port, uint64 addr64);
 	
 STNetEngine::STNetEngine()
 {

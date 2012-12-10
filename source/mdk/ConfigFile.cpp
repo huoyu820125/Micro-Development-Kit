@@ -2,6 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "mdk/mapi.h"
 #include "mdk/ConfigFile.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -9,98 +10,6 @@
 using namespace std;
 namespace mdk
 {
-
-void TrimString( string &str, string del )
-{
-	int nPos = 0;
-	unsigned int i = 0;
-	for ( ; i < del.size(); i++ )
-	{
-		while ( true )
-		{
-			nPos = str.find( del.c_str()[i], 0 );
-			if ( -1 == nPos ) break;
-			str.replace( str.begin() + nPos, str.begin() + nPos+1, "" );
-		}
-	}
-}
-
-void TrimStringLeft( string &str, string del )
-{
-	unsigned int i = 0;
-	bool bTrim = false;
-	for ( ; i < str.size(); i++ )
-	{
-		if ( string::npos == del.find(str.c_str()[i]) ) break;
-		bTrim = true;
-	}
-	if ( !bTrim ) return;
-	str.replace( str.begin(), str.begin() + i, "" );
-}
-
-void TrimStringRight( string &str, string del )
-{
-	int i = str.size() - 1;
-	bool bTrim = false;
-	for ( ; i >= 0; i-- )
-	{
-		if ( string::npos == del.find(str.c_str()[i]) ) break;
-		bTrim = true;
-	}
-	if ( !bTrim ) return;
-	str.replace( str.begin() + i + 1, str.end(), "" );
-}
-
-//Ñ¹Ëõ¿Õ°××Ö·û
-char* Trim( char *str )
-{
-	if ( NULL == str || '\0' == str[0] ) return str;
-	int i = 0;
-	char *src = str;
-	char strTemp[256];
-	for ( i = 0; '\0' != *src ; src++ )
-	{
-		if ( ' ' == *src || '\t' == *src ) continue;
-		strTemp[i++] = *src;
-	}
-	strTemp[i++] = '\0';
-	strcpy( str, strTemp );
-	return str;
-}
-
-//Ñ¹Ëõ¿Õ°××Ö·û
-char* TrimRight( char *str )
-{
-	if ( NULL == str || '\0' == str[0] ) return str;
-	int i = 0;
-	char *src = str;
-	for ( i = 0; '\0' != *src ; src++ )
-	{
-		if ( ' ' == *src || '\t' == *src ) 
-		{
-			i++;
-			continue;
-		}
-		i = 0;
-	}
-	str[strlen(str) - i] = 0;
-	return str;
-}
-
-//Ñ¹Ëõ¿Õ°××Ö·û
-char* TrimLeft( char *str )
-{
-	if ( NULL == str || '\0' == str[0] ) return str;
-	char *src = str;
-	for ( ; '\0' != *src ; src++ )
-	{
-		if ( ' ' != *src && '\t' != *src ) break;
-	}
-	char strTemp[256];
-	strcpy( strTemp, src );
-	strcpy( str, strTemp );
-	return str;
-}
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

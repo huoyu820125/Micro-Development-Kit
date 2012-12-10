@@ -141,6 +141,14 @@ SOURCE=..\include\mdk\Logger.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\source\mdk\mapi.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\mdk\mapi.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\source\mdk\MemoryPool.cpp
 # End Source File
 # Begin Source File
@@ -154,6 +162,18 @@ SOURCE=..\source\mdk\Queue.cpp
 # Begin Source File
 
 SOURCE=..\include\mdk\Queue.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\mdk\SharedPtr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\mdk\ShareMemory.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\mdk\ShareMemory.h
 # End Source File
 # Begin Source File
 
@@ -273,6 +293,54 @@ SOURCE=..\source\frame\netserver\NetServer.cpp
 # Begin Source File
 
 SOURCE=..\include\frame\netserver\NetServer.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\frame\netserver\STEpoll.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\STEpoll.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\frame\netserver\STIocp.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\STIocp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\frame\netserver\STNetConnect.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\STNetConnect.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\frame\netserver\STNetEngine.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\STNetEngine.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\frame\netserver\STNetHost.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\STNetHost.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\frame\netserver\STNetServer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\STNetServer.h
 # End Source File
 # End Group
 # End Group

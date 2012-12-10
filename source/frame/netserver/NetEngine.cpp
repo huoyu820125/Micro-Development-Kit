@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <time.h>
 
+#include "mdk/mapi.h"
 #include "mdk/Socket.h"
 
 #include "frame/netserver/NetEngine.h"
@@ -26,15 +27,6 @@ using namespace std;
 namespace mdk
 {
 
-void XXSleep( long lSecond )
-{
-#ifndef WIN32
-	usleep( lSecond * 1000 );
-#else
-	Sleep( lSecond );
-#endif
-}
-	
 NetEngine::NetEngine()
 {
 	m_stop = true;//Õ£÷π±Í÷æ
@@ -154,7 +146,7 @@ void* NetEngine::Main(void*)
 			lastConnect = curTime;
 			ConnectAll();
 		}
-		XXSleep( 10000 );
+		m_sleep( 10000 );
 	}
 	return NULL;
 }
@@ -461,32 +453,6 @@ bool NetEngine::ListenAll()
 	}
 	if ( !ret ) m_startError += "listen port:" + strFaild + "faild";
 	return ret;
-}
-
-bool addrToI64(uint64 &addr64, const char* ip, int port)
-{
-	unsigned char addr[8];
-	int nIP[4];
-	sscanf(ip, "%d.%d.%d.%d", &nIP[0], &nIP[1], &nIP[2], &nIP[3]);
-	addr[0] = nIP[0];
-	addr[1] = nIP[1];
-	addr[2] = nIP[2];
-	addr[3] = nIP[3];
-	char checkIP[25];
-	sprintf(checkIP, "%d.%d.%d.%d", addr[0], addr[1], addr[2], addr[3]);
-	if ( 0 != strcmp(checkIP, ip) ) return false;
-	memcpy( &addr[4], &port, 4);
-	memcpy(&addr64, addr, 8);
-
-	return true;
-}
-
-void i64ToAddr(char* ip, int &port, uint64 addr64)
-{
-	unsigned char addr[8];
-	memcpy(addr, &addr64, 8);
-	sprintf(ip, "%d.%d.%d.%d", addr[0], addr[1], addr[2], addr[3]);
-	memcpy(&port, &addr[4], 4);
 }
 
 bool NetEngine::Connect(const char* ip, int port)
