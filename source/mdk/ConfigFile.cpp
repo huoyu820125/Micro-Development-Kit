@@ -164,4 +164,55 @@ CFGItem& CFGItem::operator = ( string value )
 	return *this;
 }
 
+CFGItem::operator char()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator unsigned char()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator short()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator unsigned short()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator int()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator unsigned int()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator int64()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator uint64()
+{
+	return atoi(m_value.c_str());
+}
+
+CFGItem::operator float()
+{
+	return atof(m_value.c_str());
+}
+
+CFGItem::operator double()
+{
+	return atof(m_value.c_str());
+}
+
+
 }//namespace mdk

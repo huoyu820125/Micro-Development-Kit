@@ -37,6 +37,16 @@ class CFGItem
 	friend class ConfigFile;
 public:
 	operator std::string();
+	operator char();
+	operator unsigned char();
+	operator short();
+	operator unsigned short();
+	operator int();
+	operator unsigned int();
+	operator int64();
+	operator uint64();
+	operator float();
+	operator double();
 	CFGItem& operator = ( double value );
 	CFGItem& operator = ( int value );
 	CFGItem& operator = ( std::string value );
