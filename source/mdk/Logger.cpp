@@ -2,7 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/Logger.h"
+#include "../../include/mdk/Logger.h"
 
 #include <time.h>
 #include <stdarg.h>

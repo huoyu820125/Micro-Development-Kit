@@ -5,7 +5,7 @@
 #ifndef MDK_NETEVENTMONITOR_H
 #define MDK_NETEVENTMONITOR_H
 
-#include "mdk/Socket.h"
+#include "../../../include/mdk/Socket.h"
 #include <string>
 #define MAXPOLLSIZE 20000 //×î´ósocketÊý
 

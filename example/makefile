@@ -34,7 +34,7 @@ $(shell mkdir $(OUTPUT_DIR))
 CPP_DIR=
 
 #mdk安装目录
-MDK_HOME=/mnt/HYLib
+MDK_HOME=/mnt/HYLib/mdk
 
 #.h目录
 H_DIR=$(MDK_HOME)/include

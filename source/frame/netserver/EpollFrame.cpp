@@ -2,12 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "frame/netserver/EpollMonitor.h"
-#include "frame/netserver/EpollFrame.h"
-#include "frame/netserver/NetConnect.h"
-#include "mdk/atom.h"
-#include "mdk/Lock.h"
-#include "mdk/Socket.h"
+#include "../../../include/frame/netserver/EpollMonitor.h"
+#include "../../../include/frame/netserver/EpollFrame.h"
+#include "../../../include/frame/netserver/NetConnect.h"
+#include "../../../include/mdk/atom.h"
+#include "../../../include/mdk/Lock.h"
+#include "../../../include/mdk/Socket.h"
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////

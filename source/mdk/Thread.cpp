@@ -1,7 +1,7 @@
 // Thread.cpp: implementation of the Thread class.
 //
 //////////////////////////////////////////////////////////////////////
-#include "mdk/Thread.h"
+#include "../../include/mdk/Thread.h"
 #include <stdio.h>
 
 namespace mdk

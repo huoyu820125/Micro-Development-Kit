@@ -2,8 +2,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/Queue.h"
-#include "mdk/atom.h"
+#include "../../include/mdk/Queue.h"
+#include "../../include/mdk/atom.h"
 #include <stdio.h>
 #include <vector>
 

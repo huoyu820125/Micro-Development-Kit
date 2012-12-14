@@ -1,6 +1,6 @@
-#include "mdk/IOBufferBlock.h"
-#include "mdk/MemoryPool.h"
-#include "mdk/Lock.h"
+#include "../../include/mdk/IOBufferBlock.h"
+#include "../../include/mdk/MemoryPool.h"
+#include "../../include/mdk/Lock.h"
 
 #include <string.h>
 

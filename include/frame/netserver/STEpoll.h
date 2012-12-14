@@ -5,7 +5,7 @@
 #ifndef MDK_EPOLLMONITOR_H
 #define MDK_EPOLLMONITOR_H
 
-#include "frame/netserver/NetEventMonitor.h"
+#include "NetEventMonitor.h"
 #include <map>
 #ifndef WIN32
 #include <sys/epoll.h>

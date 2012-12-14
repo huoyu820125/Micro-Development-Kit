@@ -2,8 +2,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/mapi.h"
-#include "mdk/ConfigFile.h"
+#include "../../include/mdk/mapi.h"
+#include "../../include/mdk/ConfigFile.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>

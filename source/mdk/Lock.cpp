@@ -1,7 +1,7 @@
 // Lock.cpp: implementation of the Thread class.
 //
 //////////////////////////////////////////////////////////////////////
-#include "mdk/Lock.h"
+#include "../../include/mdk/Lock.h"
 
 namespace mdk
 {

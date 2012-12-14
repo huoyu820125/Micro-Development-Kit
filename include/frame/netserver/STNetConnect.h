@@ -5,10 +5,10 @@
 #ifndef MDK_STNETCONNECT_H
 #define MDK_STNETCONNECT_H
 
-#include "frame/netserver/STNetHost.h"
-#include "mdk/Lock.h"
-#include "mdk/IOBuffer.h"
-#include "mdk/Socket.h"
+#include "STNetHost.h"
+#include "../../../include/mdk/Lock.h"
+#include "../../../include/mdk/IOBuffer.h"
+#include "../../../include/mdk/Socket.h"
 
 #include <time.h>
 #include <map>

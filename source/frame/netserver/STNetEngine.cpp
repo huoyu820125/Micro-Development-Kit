@@ -1,6 +1,6 @@
 
-#include "frame/netserver/STIocp.h"
-#include "frame/netserver/STEpoll.h"
+#include "../../../include/frame/netserver/STIocp.h"
+#include "../../../include/frame/netserver/STEpoll.h"
 #ifdef WIN32
 #include <windows.h>
 #else
@@ -15,14 +15,14 @@
 #include <assert.h>
 #include <time.h>
 
-#include "mdk/Socket.h"
-#include "mdk/atom.h"
-#include "mdk/MemoryPool.h"
-#include "mdk/mapi.h"
+#include "../../../include/mdk/Socket.h"
+#include "../../../include/mdk/atom.h"
+#include "../../../include/mdk/MemoryPool.h"
+#include "../../../include/mdk/mapi.h"
 
-#include "frame/netserver/STNetEngine.h"
-#include "frame/netserver/STNetConnect.h"
-#include "frame/netserver/STNetServer.h"
+#include "../../../include/frame/netserver/STNetEngine.h"
+#include "../../../include/frame/netserver/STNetConnect.h"
+#include "../../../include/frame/netserver/STNetServer.h"
 
 using namespace std;
 namespace mdk

@@ -2,8 +2,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/IOBuffer.h"
-#include "mdk/atom.h"
+#include "../../include/mdk/IOBuffer.h"
+#include "../../include/mdk/atom.h"
 #include <new>
 #include <string.h>
 using namespace std;

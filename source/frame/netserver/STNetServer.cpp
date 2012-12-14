@@ -1,7 +1,7 @@
 #include <assert.h>
 
-#include "frame/netserver/STNetServer.h"
-#include "frame/netserver/STNetEngine.h"
+#include "../../../include/frame/netserver/STNetServer.h"
+#include "../../../include/frame/netserver/STNetEngine.h"
 
 
 namespace mdk

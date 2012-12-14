@@ -1,6 +1,6 @@
-#include "mdk/MemoryPool.h"
-#include "mdk/atom.h"
-#include "mdk/Lock.h"
+#include "../../include/mdk/MemoryPool.h"
+#include "../../include/mdk/atom.h"
+#include "../../include/mdk/Lock.h"
 #include <new>
 
 namespace mdk

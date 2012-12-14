@@ -9,9 +9,9 @@
 #define MDK_NETCONNECT_H
 
 #include "NetHost.h"
-#include "mdk/Lock.h"
-#include "mdk/IOBuffer.h"
-#include "mdk/Socket.h"
+#include "../../../include/mdk/Lock.h"
+#include "../../../include/mdk/IOBuffer.h"
+#include "../../../include/mdk/Socket.h"
 
 #include <time.h>
 #include <map>

@@ -2,11 +2,11 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "frame/netserver/NetConnect.h"
-#include "frame/netserver/NetEventMonitor.h"
-#include "frame/netserver/NetEngine.h"
-#include "mdk/atom.h"
-#include "mdk/MemoryPool.h"
+#include "../../../include/frame/netserver/NetConnect.h"
+#include "../../../include/frame/netserver/NetEventMonitor.h"
+#include "../../../include/frame/netserver/NetEngine.h"
+#include "../../../include/mdk/atom.h"
+#include "../../../include/mdk/MemoryPool.h"
 using namespace std;
 
 namespace mdk

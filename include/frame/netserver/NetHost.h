@@ -1,7 +1,7 @@
 #ifndef MDK_NETHOST_H
 #define MDK_NETHOST_H
 
-#include "mdk/FixLengthInt.h"
+#include "../../../include/mdk/FixLengthInt.h"
 #include <string>
 
 namespace mdk

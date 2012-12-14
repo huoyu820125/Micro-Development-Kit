@@ -2,10 +2,10 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "frame/netserver/IOCPMonitor.h"
-#include "frame/netserver/IOCPFrame.h"
-#include "frame/netserver/NetConnect.h"
-#include "mdk/atom.h"
+#include "../../../include/frame/netserver/IOCPMonitor.h"
+#include "../../../include/frame/netserver/IOCPFrame.h"
+#include "../../../include/frame/netserver/NetConnect.h"
+#include "../../../include/mdk/atom.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

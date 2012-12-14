@@ -4,7 +4,7 @@
 
 #include <cstdio>
 #include <cstring>
-#include "mdk/mapi.h"
+#include "../../include/mdk/mapi.h"
 #ifdef WIN32
 #include <windows.h>
 #else

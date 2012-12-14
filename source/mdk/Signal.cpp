@@ -2,8 +2,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/Signal.h"
-#include "mdk/atom.h"
+#include "../../include/mdk/Signal.h"
+#include "../../include/mdk/atom.h"
 
 namespace mdk
 {

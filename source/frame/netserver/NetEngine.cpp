@@ -13,15 +13,15 @@
 #include <assert.h>
 #include <time.h>
 
-#include "mdk/mapi.h"
-#include "mdk/Socket.h"
+#include "../../../include/mdk/mapi.h"
+#include "../../../include/mdk/Socket.h"
 
-#include "frame/netserver/NetEngine.h"
-#include "frame/netserver/NetConnect.h"
-#include "frame/netserver/NetEventMonitor.h"
-#include "frame/netserver/NetServer.h"
-#include "mdk/atom.h"
-#include "mdk/MemoryPool.h"
+#include "../../../include/frame/netserver/NetEngine.h"
+#include "../../../include/frame/netserver/NetConnect.h"
+#include "../../../include/frame/netserver/NetEventMonitor.h"
+#include "../../../include/frame/netserver/NetServer.h"
+#include "../../../include/mdk/atom.h"
+#include "../../../include/mdk/MemoryPool.h"
 
 using namespace std;
 namespace mdk

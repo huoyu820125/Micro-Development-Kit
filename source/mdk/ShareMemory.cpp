@@ -2,7 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/ShareMemory.h"
+#include "../../include/mdk/ShareMemory.h"
 #include <cstdio>
 #include <cstdlib>
 #ifndef WIN32

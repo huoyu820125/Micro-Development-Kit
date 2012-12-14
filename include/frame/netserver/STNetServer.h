@@ -1,7 +1,7 @@
 #ifndef MDK_C_NET_SERVER_H
 #define MDK_C_NET_SERVER_H
 
-#include "mdk/Thread.h"
+#include "../../../include/mdk/Thread.h"
 #include "STNetHost.h"
 
 namespace mdk

@@ -2,12 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "frame/netserver/STNetConnect.h"
-#include "frame/netserver/STNetEngine.h"
-#include "frame/netserver/STEpoll.h"
-#include "frame/netserver/NetEventMonitor.h"
-#include "mdk/atom.h"
-#include "mdk/MemoryPool.h"
+#include "../../../include/frame/netserver/STNetConnect.h"
+#include "../../../include/frame/netserver/STNetEngine.h"
+#include "../../../include/frame/netserver/STEpoll.h"
+#include "../../../include/frame/netserver/NetEventMonitor.h"
+#include "../../../include/mdk/atom.h"
+#include "../../../include/mdk/MemoryPool.h"
 using namespace std;
 unsigned int g_r = 0;
 

@@ -1,8 +1,8 @@
 #include <assert.h>
 
-#include "mdk/ThreadPool.h"
-#include "mdk/MemoryPool.h"
-#include "mdk/Task.h"
+#include "../../include/mdk/ThreadPool.h"
+#include "../../include/mdk/MemoryPool.h"
+#include "../../include/mdk/Task.h"
 
 using namespace std;
 

@@ -1,11 +1,11 @@
 #ifndef MDK_ST_NET_ENGINE_H
 #define MDK_ST_NET_ENGINE_H
 
-#include "mdk/Socket.h"
-#include "mdk/FixLengthInt.h"
-#include "mdk/MemoryPool.h"
-#include "mdk/Thread.h"
-#include "mdk/Lock.h"
+#include "../../../include/mdk/Socket.h"
+#include "../../../include/mdk/FixLengthInt.h"
+#include "../../../include/mdk/MemoryPool.h"
+#include "../../../include/mdk/Thread.h"
+#include "../../../include/mdk/Lock.h"
 
 #include <map>
 #include <vector>

@@ -18,9 +18,9 @@ typedef int HANDLE;
 typedef int OVERLAPPED;
 #endif
 
-#include "frame/netserver/NetEventMonitor.h"
-#include "mdk/MemoryPool.h"
-#include "mdk/Lock.h"
+#include "NetEventMonitor.h"
+#include "../../../include/mdk/MemoryPool.h"
+#include "../../../include/mdk/Lock.h"
 
 
 namespace mdk

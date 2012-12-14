@@ -2,10 +2,9 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "mdk/Socket.h"
+#include "../../include/mdk/Socket.h"
 
 #ifdef WIN32
-//#include <windows.h>
 #pragma comment ( lib, "ws2_32.lib" )
 #endif
 #include <stdio.h>

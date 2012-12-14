@@ -2,7 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "frame/netserver/STIocp.h"
+#include "../../../include/frame/netserver/STIocp.h"
 #ifdef WIN32
 #pragma comment ( lib, "mswsock.lib" )
 #pragma comment ( lib, "ws2_32.lib" )

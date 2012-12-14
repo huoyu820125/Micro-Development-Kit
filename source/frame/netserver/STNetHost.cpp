@@ -1,7 +1,7 @@
-#include "frame/netserver/STNetHost.h"
-#include "frame/netserver/STNetConnect.h"
-#include "mdk/Socket.h"
-#include "mdk/atom.h"
+#include "../../../include/frame/netserver/STNetHost.h"
+#include "../../../include/frame/netserver/STNetConnect.h"
+#include "../../../include/mdk/Socket.h"
+#include "../../../include/mdk/atom.h"
 using namespace std;
 
 namespace mdk
