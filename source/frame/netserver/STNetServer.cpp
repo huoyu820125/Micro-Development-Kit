@@ -60,6 +60,11 @@ void STNetServer::SetAverageConnectCount(int count)
 	m_pNetCard->SetAverageConnectCount(count);
 }
 
+void STNetServer::SetReconnectTime( int nSecond )
+{
+	m_pNetCard->SetReconnectTime(nSecond);
+}
+
 void STNetServer::SetHeartTime( int nSecond )
 {
 	m_pNetCard->SetHeartTime(nSecond);

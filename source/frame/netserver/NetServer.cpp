@@ -77,6 +77,12 @@ void NetServer::SetAverageConnectCount(int count)
 	m_pNetCard->SetAverageConnectCount(count);
 }
 
+//设置自动重连时间
+void NetServer::SetReconnectTime( int nSecond )
+{
+	m_pNetCard->SetReconnectTime(nSecond);
+}
+
 //设置心跳时间
 void NetServer::SetHeartTime( int nSecond )
 {

@@ -518,7 +518,7 @@ void NetEngine::SetServerClose(NetConnect *pConnect)
 {
 	if ( !pConnect->m_host.IsServer() ) return;
 	
-	SOCKET sock = pConnect->GetSocket()->GetSocket();
+	SOCKET sock = pConnect->GetID();
 	AutoLock lock(&m_serListMutex);
 	map<uint64,SOCKET>::iterator it = m_serIPList.begin();
 	for ( ; it != m_serIPList.end(); it++ )

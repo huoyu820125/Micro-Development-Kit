@@ -252,6 +252,7 @@ void* STNetEngine::Main(void*)
 			lastConnect = curTime;
 			ConnectAll();
 		}
+		m_sleep( 10000 );
 	}
 	return NULL;
 }
@@ -699,7 +700,7 @@ void STNetEngine::SetServerClose(STNetConnect *pConnect)
 {
 	if ( !pConnect->m_host.IsServer() ) return;
 	
-	SOCKET sock = pConnect->GetSocket()->GetSocket();
+	SOCKET sock = pConnect->GetID();
 	map<uint64,SOCKET>::iterator it = m_serIPList.begin();
 	for ( ; it != m_serIPList.end(); it++ )
 	{

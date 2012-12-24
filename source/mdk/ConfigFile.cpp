@@ -86,6 +86,7 @@ bool ConfigFile::ReadFile()
 		TrimStringLeft(value, " \t");
 		item = value;
 		item.m_description = m_description;
+		item.m_index = m_content.size();
 		m_content.insert(ConfigMap::value_type(name,item));
 		m_description = "";
 	}
@@ -103,6 +104,7 @@ CFGItem& ConfigFile::operator []( std::string key )
 		CFGItem item;
 		item = "";
 		item.m_description = "";
+		item.m_index = m_content.size();
 		m_content.insert(ConfigMap::value_type(key,item));
 		it = m_content.find( key );
 		assert( it != m_content.end() );
@@ -118,10 +120,22 @@ bool ConfigFile::Save()
 	string line;
 	CFGItem item;
 	ConfigMap::iterator it = m_content.begin();
-	for ( ; it != m_content.end(); it++ )
+	int i = 0;
+	int count = m_content.size();
+	for ( i = 0; i < count; i++ )
 	{
-		fprintf( m_pFile, "%s", it->second.m_description.c_str() );
-		fprintf( m_pFile, "%s=%s\r\n\r\n", it->first.c_str(), it->second.m_value.c_str() );
+		for ( it = m_content.begin(); it != m_content.end(); it++ )
+		{
+			if ( i != it->second.m_index ) continue;
+#ifdef WIN32
+			fprintf( m_pFile, "%s", it->second.m_description.c_str() );
+			fprintf( m_pFile, "%s=%s\n\n", it->first.c_str(), it->second.m_value.c_str() );
+#else
+			fprintf( m_pFile, "%s", it->second.m_description.c_str() );
+			fprintf( m_pFile, "%s=%s\r\n\r\n", it->first.c_str(), it->second.m_value.c_str() );
+#endif
+			break;
+		}
 	}
 	Close();
 

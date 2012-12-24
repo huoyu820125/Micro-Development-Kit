@@ -55,6 +55,7 @@ private:
 	CFGItem();
 	std::string m_value;
 	std::string m_description;
+	int m_index;
 };
 typedef std::map<std::string,CFGItem> ConfigMap;
 

@@ -98,7 +98,9 @@ public:
 
 	//设置单个服务器进程可能承载的平均连接数，默认5000
 	void SetAverageConnectCount(int count);
-	//设置心跳时间，不设置则，服务器不检查心跳
+	//设置自动重连时间,最小10s，不设置则，或设置小于等于0，服务器不重连
+	void SetReconnectTime( int nSecond );
+	//设置心跳时间,最小10s，不设置则，或设置小于等于0，服务器不检查心跳
 	void SetHeartTime( int nSecond );
 	//监听某个端口，可多次调用监听多个端口
 	bool Listen(int port);
