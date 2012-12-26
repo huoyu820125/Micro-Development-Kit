@@ -9,7 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "frame/netserver/NetServer.h"
+#include "../include/frame/netserver/NetServer.h"
 
 class TestServer : public mdk::NetServer  
 {

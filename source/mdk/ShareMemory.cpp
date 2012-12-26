@@ -5,6 +5,7 @@
 #include "../../include/mdk/ShareMemory.h"
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #ifndef WIN32
 #include <sys/time.h>
 #endif
