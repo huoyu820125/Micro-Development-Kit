@@ -99,6 +99,7 @@ public:
 	//设置单个服务器进程可能承载的平均连接数，默认5000
 	void SetAverageConnectCount(int count);
 	//设置自动重连时间,最小10s，不设置则，或设置小于等于0，服务器不重连
+	//使用Connect()方法连接的地址断开时，系统会定时尝试重新连接
 	void SetReconnectTime( int nSecond );
 	//设置心跳时间,最小10s，不设置则，或设置小于等于0，服务器不检查心跳
 	void SetHeartTime( int nSecond );
