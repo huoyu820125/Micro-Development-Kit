@@ -195,7 +195,48 @@ void NetEngine::CloseConnect( ConnectList::iterator it )
 	*/
 	NetConnect *pConnect = it->second;
 	m_connectList.erase( it );//之后不可能有MsgWorker()发生，因为OnData里面已经找不到连接了
-	pConnect->GetSocket()->Close();
+	/*
+		pConnect->GetSocket()->Close();
+		以上操作在V1.51版中，被从此处移动到CloseWorker()中
+		在m_pNetServer->OnCloseConnect()之后执行
+
+		A.首先推迟Close的目的
+			在OnCloseConnect()完成前，也就是业务层完成连接断开业务前
+			不让系统回收socket的句柄，再利用
+			
+			以避免发生如下情况。
+				比如用户在业务层(NetServer派生类)中创建map<int,NetHost>类型host列表
+				在NetServer::OnConnect()时加入
+				在NetServer::OnClose())时删除
+
+				如果在这里就执行关闭socket（假设句柄为100）
+
+				业务层NetServer::OnClose将在之后得到通知，
+				如果这时又有新连接进来，则系统会从新使用100作为句柄分配给新连接。
+				由于是多线程并发，所以可能在NetServer::OnClose之前，先执行NetServer::OnConnect()
+				由于NetServer::OnClose还没有完成，100这个key依旧存在于用户创建的map中，
+				导致NetServer::OnConnect()中的插入操作失败
+				
+		  因此，用户需要准备一个wait_insert列队，在OnConnect()中insert失败时，
+		  需要将对象保存到wait_insert列队，并终止OnConnect()业务逻辑
+
+		  在OnClose中删除对象后，用对象的key到wait_insert列队中检查，
+		  找到匹配的对象再insert，然后继续执行OnConnect的后续业务，
+		  OnConnect业务逻辑才算完成
+		  
+		  1.代码上非常麻烦
+		  2.破坏了功能内聚，OnConnect()与OnClose()逻辑被迫耦合在一起
+
+		B.再分析推迟Close有没有其它副作用
+		问题1：由于连接没有关闭，在server端主动close时，连接状态实际还是正常的，
+		如果client不停地发送数据，会不会导致OnMsg线程一直接收不完数据，
+		让OnClose没机会执行？
+		
+		  答：不会，因为m_bConnect标志被设置为false了，而OnMsg是在MsgWorker()中被循环调用，
+		每次循环都会检查m_bConnect标志，所以即使还有数据可接收，OnMsg也会被终止
+	 */
+//	pConnect->GetSocket()->Close();
+
 	pConnect->m_bConnect = false;
 	/*
 		执行业务NetServer::OnClose();
@@ -301,6 +342,15 @@ void* NetEngine::CloseWorker( NetConnect *pConnect )
 {
 	SetServerClose(pConnect);//连接的服务断开
 	m_pNetServer->OnCloseConnect( pConnect->m_host );
+	/*
+		以下pConnect->GetSocket()->Close();操作
+		是V1.51版中，从CloseConnect( ConnectList::iterator it )中移动过来
+		推迟执行close
+
+		确保业务层完成close业务后，系统才可以再利用socket句柄
+		详细原因，参考CloseConnect( ConnectList::iterator it )中注释
+	*/
+	pConnect->GetSocket()->Close();
 	pConnect->Release();//使用完毕释放共享对象
 	return 0;
 }
