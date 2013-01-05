@@ -38,11 +38,6 @@ bool NetHost::Send(const unsigned char* pMsg, unsigned short uLength)
 	return true;
 }
 
-uint32 NetHost::GetLength()
-{
-	return m_pConnect->GetLength();
-}
-
 bool NetHost::Recv( unsigned char* pMsg, unsigned short uLength, bool bClearCache )
 {
 	return m_pConnect->ReadData( pMsg, uLength, bClearCache );

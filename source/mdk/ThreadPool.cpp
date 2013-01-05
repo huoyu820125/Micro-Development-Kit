@@ -12,7 +12,7 @@ namespace mdk
 ThreadPool::ThreadPool()
 :m_nMinThreadNum(0), m_nThreadNum(0)
 {
-	m_pTaskPool = new MemoryPool( sizeof(Task), 10000 );
+	m_pTaskPool = new MemoryPool( sizeof(Task), 200 );
 	m_pContextPool = NULL;
 }
  
@@ -34,7 +34,7 @@ ThreadPool::~ThreadPool()
 bool ThreadPool::Start( int nMinThreadNum )
 {
 	m_nMinThreadNum = nMinThreadNum;
-	m_pContextPool = new MemoryPool( sizeof(THREAD_CONTEXT), m_nMinThreadNum * 2 );
+	m_pContextPool = new MemoryPool( sizeof(THREAD_CONTEXT), 50 );
 	return CreateThread( m_nMinThreadNum );
 }
 

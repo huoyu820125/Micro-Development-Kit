@@ -74,7 +74,11 @@ bool STNetEngine::Start()
 {
 	if ( !m_stop ) return true;
 	m_stop = false;	
-	m_pConnectPool = new MemoryPool( sizeof(STNetConnect), m_averageConnectCount * 2 );
+	
+	int memoryCount = 2;
+	for ( memoryCount = 2; memoryCount * memoryCount < m_averageConnectCount * 2; memoryCount++ );
+	if ( memoryCount < 200 ) memoryCount = 200;
+	m_pConnectPool = new MemoryPool( sizeof(STNetConnect), memoryCount );
 	if ( NULL == m_pConnectPool ) 
 	{
 		m_startError = "no memory for memorypool\n";

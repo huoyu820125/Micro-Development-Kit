@@ -14,7 +14,7 @@ namespace mdk
 {
 
 STIocp::STIocp()
-:m_iocpDataPool( sizeof(IOCP_OVERLAPPED), 10000 )
+:m_iocpDataPool( sizeof(IOCP_OVERLAPPED), 200 )
 {
 	
 }

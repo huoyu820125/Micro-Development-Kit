@@ -83,7 +83,10 @@ bool NetEngine::Start()
 {
 	if ( !m_stop ) return true;
 	m_stop = false;	
-	m_pConnectPool = new MemoryPool( sizeof(NetConnect), m_averageConnectCount * 2 );
+	int memoryCount = 2;
+	for ( memoryCount = 2; memoryCount * memoryCount < m_averageConnectCount * 2; memoryCount++ );
+	if ( memoryCount < 200 ) memoryCount = 200;
+	m_pConnectPool = new MemoryPool( sizeof(NetConnect), memoryCount );
 	Socket::SocketInit();
 	if ( !m_pNetMonitor->Start( MAXPOLLSIZE ) ) 
 	{

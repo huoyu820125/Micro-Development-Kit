@@ -39,8 +39,6 @@ public:
 	*/
 		
 	int ID();
-	//取得已经到达数据长度
-	uint32 GetLength();
 	/*
 		从接收缓冲中读数据
 			参数：

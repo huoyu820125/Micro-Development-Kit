@@ -85,7 +85,6 @@ void TestServer::OnMsg(mdk::NetHost &host)
 		host.Close();
 		return;
 	}
-	if ( host.GetLength() < len + 2 ) return;//数据长度不够，等待下次再读取
-	host.Recv(c, len);//将报文读出，并从接收缓冲中删除，绝对不可能长度不够，即使连接已经断开，也可以读到数据
+	if ( !host.Recv(c, len) ) return;//将报文读出，并从接收缓冲中删除，绝对不可能长度不够，即使连接已经断开，也可以读到数据
 	host.Send( c, len );//收到消息原样回复
 }

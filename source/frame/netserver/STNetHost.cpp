@@ -38,11 +38,6 @@ bool STNetHost::Send(const unsigned char* pMsg, unsigned short uLength)
 	return true;
 }
 
-uint32 STNetHost::GetLength()
-{
-	return m_pConnect->GetLength();
-}
-
 bool STNetHost::Recv( unsigned char* pMsg, unsigned short uLength, bool bClearCache )
 {
 	return m_pConnect->ReadData( pMsg, uLength, bClearCache );
