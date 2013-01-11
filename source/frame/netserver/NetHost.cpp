@@ -55,6 +55,7 @@ bool NetHost::IsServer()
 
 int NetHost::ID()
 {
+	if ( NULL == m_pConnect ) return -1;
 	return m_pConnect->GetID();
 }
 

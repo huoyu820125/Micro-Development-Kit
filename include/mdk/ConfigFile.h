@@ -36,6 +36,7 @@ class CFGItem
 {
 	friend class ConfigFile;
 public:
+	bool IsNull();
 	operator std::string();
 	operator char();
 	operator unsigned char();
@@ -56,6 +57,7 @@ private:
 	std::string m_value;
 	std::string m_description;
 	int m_index;
+	bool m_valid;
 };
 typedef std::map<std::string,CFGItem> ConfigMap;
 

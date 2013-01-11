@@ -108,6 +108,8 @@ private:
 	void* RemoteCall Main(void*);
 	//心跳线程
 	void HeartMonitor();
+	//断网重连
+	void ReConnectAll();
 	//关闭一个连接，将socket从监听器中删除
 	void CloseConnect( ConnectList::iterator it );
 

@@ -46,6 +46,7 @@ STNetConnect::~STNetConnect()
 {
 
 }
+
 void STNetConnect::Release()
 {
 	if ( 1 == AtomDec(&m_useCount, 1) )
@@ -59,7 +60,6 @@ void STNetConnect::Release()
 		this->~STNetConnect();
 		m_pMemoryPool->Free(this);
 		AtomAdd(&g_r, 1);
-		printf( "release %d\n", g_r );
 	}
 }
 

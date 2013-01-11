@@ -240,23 +240,19 @@ void* STNetEngine::Main(void*)
 {
 	time_t lastConnect = time(NULL);
 	time_t curTime = time(NULL);
-	int timeout = 60000;
 	
 	while ( !m_stop ) 
 	{
 #ifdef WIN32
-		if ( !WINIO( timeout ) ) break;
+		if ( !WINIO( 10000 ) ) break;
 #else
-		if ( !LinuxIO( timeout ) ) break;
+		if ( !LinuxIO( 10000 ) ) break;
 #endif
-		HeartMonitor();
 		curTime = time(NULL);
-		if ( 0 < m_nReconnectTime && m_nReconnectTime <= curTime - lastConnect )
-		{
-			lastConnect = curTime;
-			ConnectAll();
-		}
-		m_sleep( 10000 );
+		if ( 10000 <= curTime - lastConnect ) continue;
+		lastConnect = curTime;
+		HeartMonitor();
+		ReConnectAll();
 	}
 	return NULL;
 }
@@ -264,6 +260,7 @@ void* STNetEngine::Main(void*)
 //心跳线程
 void STNetEngine::HeartMonitor()
 {
+	if ( 0 >= m_nHeartTime ) return;
 	//////////////////////////////////////////////////////////////////////////
 	//关闭无心跳的连接
 	ConnectList::iterator it;
@@ -276,7 +273,7 @@ void STNetEngine::HeartMonitor()
 	tCurTime = time( NULL );
 	time_t tLastHeart;
 	AutoLock lock( &m_connectsMutex );
-	for ( it = m_connectList.begin(); m_nHeartTime > 0 && it != m_connectList.end(); )//心跳时间<=0无心跳机制,或遍历完成
+	for ( it = m_connectList.begin(); it != m_connectList.end(); )//心跳时间<=0无心跳机制,或遍历完成
 	{
 		pConnect = it->second;
 		if ( pConnect->m_host.IsServer() ) //服务连接 ，不检查心跳
@@ -296,6 +293,16 @@ void STNetEngine::HeartMonitor()
 		it = m_connectList.begin();
 	}
 	lock.Unlock();
+}
+
+void STNetEngine::ReConnectAll()
+{
+	if ( 0 >= m_nReconnectTime ) return;//无重连机制
+	static time_t lastConnect = time(NULL);
+	time_t curTime = time(NULL);
+	if ( m_nReconnectTime > curTime - lastConnect ) return;
+	lastConnect = curTime;
+	ConnectAll();
 }
 
 //关闭一个连接
@@ -329,7 +336,6 @@ int g_c = 0;
 bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 {
 	AtomAdd(&g_c, 1);
-	printf( "new socket(%d) connect %d\n", sock, g_c );
 	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, isConnectServer, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{

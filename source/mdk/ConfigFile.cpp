@@ -87,6 +87,7 @@ bool ConfigFile::ReadFile()
 		item = value;
 		item.m_description = m_description;
 		item.m_index = m_content.size();
+		item.m_valid = true;
 		m_content.insert(ConfigMap::value_type(name,item));
 		m_description = "";
 	}
@@ -144,6 +145,7 @@ bool ConfigFile::Save()
 
 CFGItem::CFGItem()
 {
+	m_valid = false;
 }
 
 CFGItem::~CFGItem()
@@ -161,6 +163,7 @@ CFGItem& CFGItem::operator = ( double value )
 	sprintf( strValue, "%f", value );
 	m_value = strValue;
 	TrimStringRight(m_value,"0");
+	m_valid = true;
 	return *this;
 }
 
@@ -169,12 +172,14 @@ CFGItem& CFGItem::operator = ( int value )
 	char strValue[128];
 	sprintf( strValue, "%d", value );
 	m_value = strValue;
+	m_valid = true;
 	return *this;
 }
 
 CFGItem& CFGItem::operator = ( string value )
 {
 	m_value = value;
+	m_valid = true;
 	return *this;
 }
 
@@ -228,5 +233,9 @@ CFGItem::operator double()
 	return atof(m_value.c_str());
 }
 
+bool CFGItem::IsNull()
+{
+	return !m_valid;
+}
 
 }//namespace mdk

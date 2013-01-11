@@ -20,7 +20,7 @@
 namespace mdk
 {
 
-Logger::Logger( const char *strErrLog, const char *strRunLog )
+Logger::Logger()
 {
 	m_bRLogOpened = false;
 	m_bELogOpened = false;
@@ -194,8 +194,13 @@ void Logger::Error( const char *format, ... )
 		vfprintf( m_fpRunLog, format, ap );
 		va_end( ap );
 	}
+#ifdef WIN32
+	fprintf( m_fpErrLog, "\n" );
+	fprintf( m_fpRunLog, "\n" );
+#else
 	fprintf( m_fpErrLog, "\r\n" );
 	fprintf( m_fpRunLog, "\r\n" );
+#endif
 	fflush(m_fpErrLog);
 	fflush(m_fpRunLog);
 
@@ -228,7 +233,11 @@ void Logger::Run( const char *format, ... )
 	va_start( ap, format );
 	vfprintf( m_fpRunLog, format, ap );
 	va_end( ap );
+#ifdef WIN32
+	fprintf( m_fpRunLog, "\n" );
+#else
 	fprintf( m_fpRunLog, "\r\n" );
+#endif
 	fflush(m_fpRunLog);
 
 	//打印日志内容
@@ -257,8 +266,13 @@ void Logger::ErrorStream( unsigned char *stream, int nLen )
 		fprintf( m_fpErrLog, "%x,", stream[i] );
 		fprintf( m_fpRunLog, "%x,", stream[i] );
 	}
+#ifdef WIN32
+	fprintf( m_fpErrLog, "%x\n", stream[i] );
+	fprintf( m_fpRunLog, "%x\n", stream[i] );
+#else
 	fprintf( m_fpErrLog, "%x\r\n", stream[i] );
 	fprintf( m_fpRunLog, "%x\r\n", stream[i] );
+#endif
 	fflush(m_fpRunLog);
 	fflush(m_fpErrLog);
 	
@@ -275,7 +289,11 @@ void Logger::RunStream( unsigned char *stream, int nLen )
 	{
 		fprintf( m_fpRunLog, "%x,", stream[i] );
 	}
+#ifdef WIN32
+	fprintf( m_fpRunLog, "%x\n", stream[i] );
+#else
 	fprintf( m_fpRunLog, "%x\r\n", stream[i] );
+#endif
 	fflush(m_fpRunLog);
 	
 	return;

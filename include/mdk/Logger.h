@@ -14,7 +14,7 @@ namespace mdk
 class Logger  
 {
 public:
-	Logger( const char *strErrLog, const char *strRunLog );
+	Logger();
 	virtual ~Logger();
 
 public:

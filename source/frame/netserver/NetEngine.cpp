@@ -138,18 +138,11 @@ void NetEngine::Stop()
 //主线程
 void* NetEngine::Main(void*)
 {
-	time_t lastConnect = time(NULL);
-	time_t curTime = time(NULL);
 	while ( !m_stop ) 
 	{
-		curTime = time(NULL);
-		HeartMonitor();
-		if ( 0 < m_nReconnectTime && m_nReconnectTime <= curTime - lastConnect )
-		{
-			lastConnect = curTime;
-			ConnectAll();
-		}
 		m_sleep( 10000 );
+		HeartMonitor();
+		ReConnectAll();
 	}
 	return NULL;
 }
@@ -186,6 +179,16 @@ void NetEngine::HeartMonitor()
 		it = m_connectList.begin();
 	}
 	lock.Unlock();
+}
+
+void NetEngine::ReConnectAll()
+{
+	if ( 0 >= m_nReconnectTime ) return;//无重连机制
+	static time_t lastConnect = time(NULL);
+	time_t curTime = time(NULL);
+	if ( m_nReconnectTime > curTime - lastConnect ) return;
+	lastConnect = curTime;
+	ConnectAll();
 }
 
 //关闭一个连接
