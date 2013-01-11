@@ -260,7 +260,7 @@ void* STNetEngine::Main(void*)
 //心跳线程
 void STNetEngine::HeartMonitor()
 {
-	if ( 0 >= m_nHeartTime ) return;
+	if ( 0 > m_nHeartTime ) return;
 	//////////////////////////////////////////////////////////////////////////
 	//关闭无心跳的连接
 	ConnectList::iterator it;
@@ -297,7 +297,7 @@ void STNetEngine::HeartMonitor()
 
 void STNetEngine::ReConnectAll()
 {
-	if ( 0 >= m_nReconnectTime ) return;//无重连机制
+	if ( 0 > m_nReconnectTime ) return;//无重连机制
 	static time_t lastConnect = time(NULL);
 	time_t curTime = time(NULL);
 	if ( m_nReconnectTime > curTime - lastConnect ) return;
