@@ -150,7 +150,7 @@ void* NetEngine::Main(void*)
 //心跳线程
 void NetEngine::HeartMonitor()
 {
-	if ( 0 > m_nHeartTime ) return;//无心跳机制
+	if ( 0 >= m_nHeartTime ) return;//无心跳机制
 	//////////////////////////////////////////////////////////////////////////
 	//关闭无心跳的连接
 	ConnectList::iterator it;
@@ -183,7 +183,7 @@ void NetEngine::HeartMonitor()
 
 void NetEngine::ReConnectAll()
 {
-	if ( 0 > m_nReconnectTime ) return;//无重连机制
+	if ( 0 >= m_nReconnectTime ) return;//无重连机制
 	static time_t lastConnect = time(NULL);
 	time_t curTime = time(NULL);
 	if ( m_nReconnectTime > curTime - lastConnect ) return;
