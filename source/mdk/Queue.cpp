@@ -45,13 +45,14 @@ bool Queue::Push( void *pObject )
 	uint32 pushPos = AtomAdd(&m_push, 1);
 	pushPos = pushPos % m_nSize;
 	/*
-		只有在NPop并发情况下，因Pop无序完成，第一个位置的Pop未完成，后面的Pop就先完成提示有空位
-		因为该类只允许1对N，所以必然是单线程Push，所以条件内push控制变量不需要原子操作
+		只有在NPop并发情况下，因Pop无序完成，第一个位置的Pop未完成，
+		后面的Pop就先完成提示有空位，导致这里检查第一个位置时，发现数据未被取走
+		因为该类只允许1对N，所以必然是单线程Push( void *pObject )，所以条件内m_push不需要并发控制
 	 */
 	if ( !m_queue[pushPos].IsEmpty ) 
 	{
 		m_push--;
-		m_nWriteAbleCount++;
+		AtomAdd(&m_nWriteAbleCount,1);
 		return false;
 	}
 	m_queue[pushPos].pObject = pObject;
@@ -72,13 +73,15 @@ void* Queue::Pop()
 	uint32 popPos = AtomAdd(&m_pop, 1);
 	popPos = popPos % m_nSize;
 	/*
-		只有在NPush并发情况下，因Push无序完成，第一个位置的Push未完成，后面的Push就先完成提示有数据
-		因为该类只允许1对N，所以必然是单线程Pop，所以条件内Pop控制变量不需要原子操作
+		只有在NPush并发情况下，因Push无序完成，第一个位置的Push未完成，
+		后面的Push就先完成提示有数据，导致这里检查第一个位置时，发现没有数据可读
+		因为该类只允许1对N，必然是单线程Pop()，所以条件内m_pop不需要并发控制
 	 */
 	if ( m_queue[popPos].IsEmpty )
 	{
 		m_pop--;
-		m_nReadAbleCount++;
+		AtomAdd(&m_nReadAbleCount,1);
+		return NULL;
 	}
 	void *pObject = m_queue[popPos].pObject;
 	m_queue[popPos].pObject = NULL;
