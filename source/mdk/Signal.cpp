@@ -20,7 +20,9 @@ Signal::Signal()
 
 Signal::~Signal()
 {
-#ifndef WIN32
+#ifdef WIN32
+	if (NULL != m_signal) CloseHandle(m_signal);
+#else
 	sem_destroy(&m_signal);
 #endif
 }
