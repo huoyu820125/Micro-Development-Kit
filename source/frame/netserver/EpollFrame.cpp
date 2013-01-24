@@ -157,6 +157,7 @@ SOCKET EpollFrame::ListenPort(int port)
 bool EpollFrame::MonitorConnect(NetConnect *pConnect)
 {
 #ifndef WIN32
+	pConnect->GetSocket()->SetSockMode();
 	m_pNetMonitor->AddMonitor( pConnect->GetSocket()->GetSocket() );
 	return m_pNetMonitor->AddRecv( pConnect->GetSocket()->GetSocket(), NULL, 0 );
 #endif
