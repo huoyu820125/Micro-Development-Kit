@@ -124,7 +124,7 @@ void NetEngine::Stop()
 	if ( m_stop ) return;
 	m_stop = true;
 	m_pNetMonitor->Stop();
-	m_mainThread.Stop( 3 );
+	m_mainThread.Stop( 3000 );
 	m_ioThreads.Stop();
 	m_workThreads.Stop();
 	Socket::SocketDestory();
@@ -307,6 +307,7 @@ bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 		closesocket(sock);
 		return false;
 	}
+	pConnect->GetSocket()->SetSockMode();
 	//加入管理列表
 	AutoLock lock( &m_connectsMutex );
 	pConnect->RefreshHeart();

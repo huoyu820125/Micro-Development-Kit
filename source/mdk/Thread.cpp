@@ -99,11 +99,13 @@ void* Thread::Main()
 void Thread::Stop( long lMillSecond )
 {
 #ifdef WIN32
+	if ( NULL == m_hHandle ) return;
 	if ( WAIT_OBJECT_0 != WaitForSingleObject( m_hHandle, lMillSecond ) )
 	{
 		TerminateThread( m_hHandle, 0 );
 	}
 	CloseHandle(m_hHandle);
+	m_hHandle = NULL;
 #else
 	if ( m_bStop ) 
 	{

@@ -268,7 +268,7 @@ SOCKET Socket::Detach()
 		nBufLen		__int32		[Out]	收到数据的长度
 		lSecond		long		[In]	超时时间秒
 		lMinSecond	long		[In]	超时时间毫秒
-	返回值：实际接收到的字节数，超时返回-1
+	返回值：实际接收到的字节数，超时返回-2，断开连接返回-1，其它错误返回-3
 */
 int Socket::Receive( void* lpBuf, int nBufLen, bool bCheckDataLength, long lSecond, long lMinSecond )
 {
@@ -297,7 +297,7 @@ int Socket::Receive( void* lpBuf, int nBufLen, bool bCheckDataLength, long lSeco
 		lpBuf	const void*	[In]	发送的数据
 		nBufLen	int		[In]	数据长度
 		nFlags	int		[In]	An indicator specifying the way in which the call is made
-	返回值：成功实际发送的字节数，失败返回-1
+	返回值：成功实际发送的字节数，失败返回小于0
 */
 int Socket::Send( const void* lpBuf, int nBufLen, int nFlags )
 {
@@ -306,13 +306,18 @@ int Socket::Send( const void* lpBuf, int nBufLen, int nFlags )
 	{
 #ifdef WIN32
 		int nError = GetLastError();
-		return -1;
+		if ( WSAEWOULDBLOCK == nError ) return 0;//非阻塞，缓冲已满,返回WSAEWOULDBLOCK本次发送缓冲会被系统清空，即1byte也不会被发送，所以返回实际发送0byte
+		return seError;
 #else
-		return -1;
+		if ( EAGAIN == errno ) return 0;//非阻塞，缓冲已满，同上
+		return seError;
 #endif
 	}
-	if ( nSendSize <= nBufLen ) return nSendSize;
-	return -1;
+	if ( nSendSize <= nBufLen ) 
+	{
+		return nSendSize;
+	}
+	return seError;
 }
 
 /*
