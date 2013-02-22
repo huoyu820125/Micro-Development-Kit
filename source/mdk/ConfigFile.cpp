@@ -103,8 +103,6 @@ CFGItem& ConfigFile::operator []( std::string key )
 	if ( it == m_content.end() ) 
 	{
 		CFGItem item;
-		item = "";
-		item.m_description = "";
 		item.m_index = m_content.size();
 		m_content.insert(ConfigMap::value_type(key,item));
 		it = m_content.find( key );
@@ -145,6 +143,9 @@ bool ConfigFile::Save()
 
 CFGItem::CFGItem()
 {
+	m_value = "";
+	m_description = "";
+	m_index = -1;
 	m_valid = false;
 }
 

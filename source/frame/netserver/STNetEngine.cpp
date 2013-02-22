@@ -79,12 +79,18 @@ bool STNetEngine::Start()
 	for ( memoryCount = 2; memoryCount * memoryCount < m_averageConnectCount * 2; memoryCount++ );
 	if ( memoryCount < 200 ) memoryCount = 200;
 	m_pConnectPool = new MemoryPool( sizeof(STNetConnect), memoryCount );
-	if ( NULL == m_pConnectPool ) 
+	if ( NULL == m_pConnectPool )
 	{
-		m_startError = "no memory for memorypool\n";
+		m_startError = "内存不足，无法创建NetConnect内存池";
+		Stop();
 		return false;
 	}
-	Socket::SocketInit();
+	if ( !Socket::SocketInit() )
+	{
+		m_startError = "Socket::SocketInit()失败";
+		Stop();
+		return false;
+	}
 	if ( !m_pNetMonitor->Start( MAXPOLLSIZE ) ) 
 	{
 		m_startError = m_pNetMonitor->GetInitError();
