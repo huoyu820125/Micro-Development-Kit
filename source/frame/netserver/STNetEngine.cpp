@@ -30,6 +30,8 @@ namespace mdk
 	
 STNetEngine::STNetEngine()
 {
+	Socket::SocketInit();
+	m_pConnectPool = NULL;
 	m_stop = true;//停止标志
 	m_startError = "";
 	m_nHeartTime = 0;//心跳间隔(S)，默认不检查
@@ -46,6 +48,12 @@ STNetEngine::STNetEngine()
 STNetEngine::~STNetEngine()
 {
 	Stop();
+	if ( NULL != m_pConnectPool )
+	{
+		delete m_pConnectPool;
+		m_pConnectPool = NULL;
+	}
+	Socket::SocketDestory();
 }
 
 //设置平均连接数
@@ -78,16 +86,15 @@ bool STNetEngine::Start()
 	int memoryCount = 2;
 	for ( memoryCount = 2; memoryCount * memoryCount < m_averageConnectCount * 2; memoryCount++ );
 	if ( memoryCount < 200 ) memoryCount = 200;
+	if ( NULL != m_pConnectPool )//之前Stop()过,又重新启动
+	{
+		delete m_pConnectPool;
+		m_pConnectPool = NULL;
+	}
 	m_pConnectPool = new MemoryPool( sizeof(STNetConnect), memoryCount );
 	if ( NULL == m_pConnectPool )
 	{
 		m_startError = "内存不足，无法创建NetConnect内存池";
-		Stop();
-		return false;
-	}
-	if ( !Socket::SocketInit() )
-	{
-		m_startError = "Socket::SocketInit()失败";
 		Stop();
 		return false;
 	}
@@ -230,12 +237,7 @@ void STNetEngine::Stop()
 	if ( m_stop ) return;
 	m_stop = true;
 	m_pNetMonitor->Stop();
-	Socket::SocketDestory();
-	if ( NULL != m_pConnectPool )
-	{
-		delete m_pConnectPool;
-		m_pConnectPool = NULL;
-	}
+	m_mainThread.Stop(3000);
 #ifndef WIN32
 	m_ioList.clear();
 #endif

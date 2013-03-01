@@ -60,9 +60,9 @@ void NetServer::WaitStop()
  */
 void NetServer::Stop()
 {
-	if ( NULL != this->m_pNetCard ) m_pNetCard->Stop();
 	m_bStop = true;
 	m_mainThread.Stop( 3000 );
+	if ( NULL != this->m_pNetCard ) m_pNetCard->Stop();
 }
 
 //服务器正常返回true，否则返回false

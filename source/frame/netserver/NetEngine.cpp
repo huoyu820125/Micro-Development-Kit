@@ -29,6 +29,8 @@ namespace mdk
 
 NetEngine::NetEngine()
 {
+	Socket::SocketInit();
+	m_pConnectPool = NULL;
 	m_stop = true;//停止标志
 	m_startError = "";
 	m_nHeartTime = 0;//心跳间隔(S)，默认不检查
@@ -43,6 +45,12 @@ NetEngine::NetEngine()
 NetEngine::~NetEngine()
 {
 	Stop();
+	if ( NULL != m_pConnectPool )
+	{
+		delete m_pConnectPool;
+		m_pConnectPool = NULL;
+	}
+	Socket::SocketDestory();
 }
 
 //设置平均连接数
@@ -86,16 +94,15 @@ bool NetEngine::Start()
 	int memoryCount = 2;
 	for ( memoryCount = 2; memoryCount * memoryCount < m_averageConnectCount * 2; memoryCount++ );
 	if ( memoryCount < 200 ) memoryCount = 200;
+	if ( NULL != m_pConnectPool )//之前Stop了又重新Start
+	{
+		delete m_pConnectPool;
+		m_pConnectPool = NULL;
+	}
 	m_pConnectPool = new MemoryPool( sizeof(NetConnect), memoryCount );
 	if ( NULL == m_pConnectPool )
 	{
 		m_startError = "内存不足，无法创建NetConnect内存池";
-		Stop();
-		return false;
-	}
-	if ( !Socket::SocketInit() )
-	{
-		m_startError = "Socket::SocketInit()失败";
 		Stop();
 		return false;
 	}
@@ -138,12 +145,6 @@ void NetEngine::Stop()
 	m_mainThread.Stop( 3000 );
 	m_ioThreads.Stop();
 	m_workThreads.Stop();
-	Socket::SocketDestory();
-	if ( NULL != m_pConnectPool )
-	{
-		delete m_pConnectPool;
-		m_pConnectPool = NULL;
-	}
 }
 
 //主线程

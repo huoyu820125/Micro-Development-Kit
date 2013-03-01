@@ -43,9 +43,9 @@ void STNetServer::WaitStop()
 
 void STNetServer::Stop()
 {
-	if ( NULL != this->m_pNetCard ) m_pNetCard->Stop();
 	m_bStop = true;
 	m_mainThread.Stop( 3000 );
+	if ( NULL != this->m_pNetCard ) m_pNetCard->Stop();
 }
 
 
