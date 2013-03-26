@@ -35,6 +35,7 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/types.h>
+#include <unistd.h>//ÎªÁË¼æÈÝgcc4.7.2 gcc4.7.3
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1

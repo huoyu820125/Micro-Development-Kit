@@ -16,7 +16,12 @@ namespace mdk
 IOCPMonitor::IOCPMonitor()
 :m_iocpDataPool( sizeof(IOCP_OVERLAPPED), 200 )
 {
-	
+	m_nCPUCount = 0;
+#ifdef WIN32
+	SYSTEM_INFO sysInfo;
+	::GetSystemInfo(&sysInfo);
+	m_nCPUCount = sysInfo.dwNumberOfProcessors;
+#endif
 }
 
 IOCPMonitor::~IOCPMonitor()
@@ -42,8 +47,10 @@ bool IOCPMonitor::Start( int nMaxMonitor )
 #ifdef WIN32
 	//启动IOCP监听
 	//创建完成端口
+	int NumberOfConcurrentThreads = 0;
+	if ( 0 < m_nCPUCount ) NumberOfConcurrentThreads = m_nCPUCount * 2 + 2;
 	m_hCompletPort = CreateIoCompletionPort( INVALID_HANDLE_VALUE, 
-		0, 0, m_nCPUCount * 2 );
+		0, 0, NumberOfConcurrentThreads );
 	if ( NULL == m_hCompletPort ) 
 	{
 		m_initError = "create iocp monitor faild";
