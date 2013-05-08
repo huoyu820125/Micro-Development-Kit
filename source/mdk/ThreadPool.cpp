@@ -74,7 +74,7 @@ void ThreadPool::ReleaseContext(THREAD_CONTEXT *pContext)
 void ThreadPool::Stop()
 {
 	AutoLock lock(&m_threadsMutex);
-	AutoLock lock(&m_tasksMutex);
+	AutoLock lockTask(&m_tasksMutex);
 	m_tasks.clear();//гЕ©ухннЯ
 	
 	threadMaps::iterator it = m_threads.begin();
