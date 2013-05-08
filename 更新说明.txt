@@ -1,0 +1,21 @@
+1.threadpool::Stop 没有清空m_tasks
+
+2.threadpool::Stop 总是等到3秒超时才关闭
+
+3.NetEngine::Main里面sleep，使用信号代替，在stop时可以立刻停止线程
+提高stop响应速度
+
+4.NetHost::operator=
+AtomAdd(&obj.m_pConnect->m_useCount, 1);
+语句增加条件检查if ( NULL != obj.m_pConnect ) 
+支持主动释放，nethost nullobj; host = nullobj;//主动释放
+
+
+5.NetEngine::ConnectWorker
+pConnect->Release();//使用完毕释放共享对象
+移动到最后return之前,否则如果在onconnect里面关闭连接，会有可能访问null指针
+
+6.NetEngine::ConnectWorker
+MonitorConnect之前加上条件true == pConnect->m_bConnect
+避免在onconnect里面关闭连接后，还将连接加入监听
+

@@ -22,7 +22,7 @@ NetHost& NetHost::operator=(const NetHost& obj)
 {
 	if ( m_pConnect == obj.m_pConnect ) return *this;
 	if ( NULL != m_pConnect ) m_pConnect->Release();
-	AtomAdd(&obj.m_pConnect->m_useCount, 1);
+	if ( NULL != obj.m_pConnect ) AtomAdd(&obj.m_pConnect->m_useCount, 1);
 	m_pConnect = obj.m_pConnect;
 	return *this;
 }

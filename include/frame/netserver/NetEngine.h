@@ -7,6 +7,7 @@
 #include "../../../include/mdk/ThreadPool.h"
 #include "../../../include/mdk/FixLengthInt.h"
 #include "../../../include/mdk/MemoryPool.h"
+#include "../../../include/mdk/Signal.h"
 
 #include <map>
 #include <vector>
@@ -55,6 +56,7 @@ protected:
 	MemoryPool *m_pConnectPool;//NetConnect对象池
 	int m_averageConnectCount;//平均连接数
 	bool m_stop;//停止标志
+	Signal m_sigStop;//停止信号
 	/**
 		连接表
 		map<unsigned long,NetConnect*>

@@ -74,19 +74,13 @@ void ThreadPool::ReleaseContext(THREAD_CONTEXT *pContext)
 void ThreadPool::Stop()
 {
 	AutoLock lock(&m_threadsMutex);
-
+	AutoLock lock(&m_tasksMutex);
+	m_tasks.clear();//清空任务
+	
 	threadMaps::iterator it = m_threads.begin();
 	//全部设为停止
-	for ( it = m_threads.begin(); it != m_threads.end(); it++ )
-	{
-		it->second->bRun = false;
-		m_sigNewTask.Notify();
-	}
-	//通知所有线程，停止等待任务
-	for ( it = m_threads.begin(); it != m_threads.end(); it++ )
-	{
-		m_sigNewTask.Notify();
-	}
+	for ( it = m_threads.begin(); it != m_threads.end(); it++ ) it->second->bRun = false;
+	m_sigNewTask.Notify();//通知1个线程停止，线程停止会通知其它线程停止
 	//通知所有线程，停止
 	for ( it = m_threads.begin(); it != m_threads.end(); it++ )
 	{
@@ -165,8 +159,10 @@ void* ThreadPool::ThreadFunc(void* pParam)
 			ReleaseTask(pTask);
 		}
 		pContext->bIdle = true;
+		if ( !pContext->bRun ) break;//避免进入wait
 		if ( !m_sigNewTask.Wait() ) continue;//等待任务
 	}
+	m_sigNewTask.Notify();//通知其它线程停止
 	return (void*)0;
 }
 
