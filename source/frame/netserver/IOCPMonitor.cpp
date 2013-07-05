@@ -127,6 +127,11 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 			count++;
 		}
 	}
+	else if ( IOCPMonitor::close == pOverlapped->completiontype )
+	{
+		Stop();
+		return false;
+	}
 	else if ( 0 == dwIOSize && IOCPMonitor::recv == pOverlapped->completiontype )
 	{
 		events[count].type = IOCPMonitor::close;
@@ -256,6 +261,22 @@ bool IOCPMonitor::AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize
 	
 #endif
 	return true;
+}
+
+bool IOCPMonitor::Stop()
+{
+#ifdef WIN32
+	memset( &m_stopOverlapped.m_overlapped, 0, sizeof(OVERLAPPED) );
+	m_stopOverlapped.m_wsaBuffer.buf = NULL;
+	m_stopOverlapped.m_wsaBuffer.len = 0;
+	m_stopOverlapped.m_overlapped.Internal = 0;
+	m_stopOverlapped.sock = 0;
+	m_stopOverlapped.completiontype = IOCPMonitor::close;
+	
+	::PostQueuedCompletionStatus(m_hCompletPort, 0, 0, (OVERLAPPED*)&m_stopOverlapped );
+#endif
+	return true;
+
 }
 
 }//namespace mdk

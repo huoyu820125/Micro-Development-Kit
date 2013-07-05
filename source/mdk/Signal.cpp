@@ -14,7 +14,7 @@ Signal::Signal()
 	m_signal = CreateEvent( NULL, false, false, NULL );
 #else
 	m_waitCount = 0;
-	sem_init( &m_signal, 1, 0 );
+	sem_init( &m_signal, 0, 0 );
 #endif	
 }
 

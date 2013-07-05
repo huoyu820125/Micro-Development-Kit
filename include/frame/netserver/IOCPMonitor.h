@@ -91,6 +91,8 @@ public:
 public:
 	//开始监听
 	bool Start( int nMaxMonitor );
+	//停止监听
+	bool Stop();
 	//增加一个监听对象
 	bool AddMonitor( SOCKET socket );
 	//等待事件发生,block无作用
@@ -108,6 +110,7 @@ private:
 	SOCKET m_listenSocket;
 	HANDLE m_hCompletPort;//完成端口句柄
 	int m_nCPUCount;
+	IOCP_OVERLAPPED m_stopOverlapped;
 };
 
 }//namespace mdk
