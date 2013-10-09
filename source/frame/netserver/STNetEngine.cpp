@@ -12,7 +12,6 @@
 #include <vector>
 #include <list>
 #include <iostream>
-#include <assert.h>
 #include <time.h>
 
 #include "../../../include/mdk/Socket.h"

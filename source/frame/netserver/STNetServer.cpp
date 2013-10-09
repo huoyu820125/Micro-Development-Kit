@@ -1,4 +1,3 @@
-#include <assert.h>
 
 #include "../../../include/frame/netserver/STNetServer.h"
 #include "../../../include/frame/netserver/STNetEngine.h"

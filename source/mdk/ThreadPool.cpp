@@ -1,4 +1,3 @@
-#include <assert.h>
 
 #include "../../include/mdk/ThreadPool.h"
 #include "../../include/mdk/MemoryPool.h"

@@ -44,7 +44,6 @@ typedef int SOCKET;
 
 
 #include <time.h>
-#include <assert.h>
 #include <string>
 
 namespace mdk

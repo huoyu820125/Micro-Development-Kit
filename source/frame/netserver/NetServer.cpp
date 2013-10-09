@@ -1,4 +1,3 @@
-#include <assert.h>
 
 #include "../../../include/frame/netserver/NetServer.h"
 #include "../../../include/frame/netserver/NetEngine.h"

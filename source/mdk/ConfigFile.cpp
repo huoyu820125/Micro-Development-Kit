@@ -4,7 +4,6 @@
 
 #include "../../include/mdk/mapi.h"
 #include "../../include/mdk/ConfigFile.h"
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 using namespace std;
@@ -19,7 +18,13 @@ ConfigFile::ConfigFile( const char *strName )
 {
 	m_strName = strName;
 	m_pFile = NULL;
-	assert( ReadFile() );
+	if ( !ReadFile() ) //没有找到配置文件，主动触发崩溃
+	{
+		char *p = NULL;
+		*p = 1;
+		exit(0);
+	}
+				
 }
 
 ConfigFile::~ConfigFile()
@@ -98,7 +103,12 @@ bool ConfigFile::ReadFile()
 
 CFGItem& ConfigFile::operator []( std::string key )
 {
-	assert( "" != key );
+	if ( "" == key ) //非法key，主动触发崩溃
+	{
+		char *p = NULL;
+		*p = 1;
+		exit(0);
+	}
 	ConfigMap::iterator it = m_content.find( key );
 	if ( it == m_content.end() ) 
 	{
@@ -106,7 +116,12 @@ CFGItem& ConfigFile::operator []( std::string key )
 		item.m_index = m_content.size();
 		m_content.insert(ConfigMap::value_type(key,item));
 		it = m_content.find( key );
-		assert( it != m_content.end() );
+		if ( it == m_content.end() ) //操作失败，主动触发崩溃
+		{
+			char *p = NULL;
+			*p = 1;
+			exit(0);
+		}
 	}
 	return it->second;
 }

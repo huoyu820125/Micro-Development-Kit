@@ -5,7 +5,6 @@
 #ifndef MDK_SHAREDPTR_H
 #define MDK_SHAREDPTR_H
 #include "atom.h"
-#include <assert.h>
 
 namespace mdk
 {
@@ -79,25 +78,33 @@ public :
 
 	Obj* operator->()
 	{
-		assert( NULL != m_pObject );
 		return m_pObject;
 	}
 
 	const Obj* operator->() const
 	{
-		assert( NULL != m_pObject );
 		return m_pObject;
 	}
 	
 	Obj &operator*() 
 	{
-		assert( NULL != m_pObject );
+		if ( NULL == m_pObject )//访问null指针，主动触发崩溃
+		{
+			char *p = NULL;
+			*p = 1;
+			exit(0);
+		}
 		return *m_pObject;
 	}
 
 	const Obj &operator*() const 
 	{
-		assert( NULL != m_pObject );
+		if ( NULL == m_pObject )//访问null指针，主动触发崩溃
+		{
+			char *p = NULL;
+			*p = 1;
+			exit(0);
+		}
 		return *m_pObject;
 	}
 	

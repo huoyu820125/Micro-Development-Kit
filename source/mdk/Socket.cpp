@@ -123,7 +123,7 @@ void Socket::GetPeerAddress( string& strWanIP, int& nWanPort )
 
 bool Socket::InitPeerAddress()
 {
-	assert( INVALID_SOCKET != m_hSocket );
+	if ( INVALID_SOCKET == m_hSocket ) return false;
 
 	sockaddr_in sockAddr;
 	memset(&sockAddr, 0, sizeof(sockAddr));
@@ -184,7 +184,7 @@ bool Socket::Init(protocol nProtocolType)
 */
 bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort)
 {
-	assert( NULL != lpszHostAddress );
+	if ( NULL == lpszHostAddress ) return false;
 
 	sockaddr_in sockAddr;
 	memset(&sockAddr,0,sizeof(sockAddr));
@@ -364,7 +364,7 @@ bool Socket::Listen( int nConnectionBacklog )
 */
 bool Socket::Accept(Socket& rConnectedSocket)
 {
-	assert( INVALID_SOCKET == rConnectedSocket.m_hSocket );
+	if ( INVALID_SOCKET != rConnectedSocket.m_hSocket ) return false;
 	rConnectedSocket.m_hSocket = accept(m_hSocket, NULL, NULL);
 	if ( INVALID_SOCKET == rConnectedSocket.m_hSocket )
 	{
