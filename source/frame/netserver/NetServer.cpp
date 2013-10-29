@@ -115,13 +115,13 @@ bool NetServer::Connect(const char *ip, int port)
 }
 
 //向某组连接广播消息
-void NetServer::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int msgsize, int *filterGroupIDs, int filterCount )
+void NetServer::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount )
 {
 	m_pNetCard->BroadcastMsg( recvGroupIDs, recvCount, msg, msgsize, filterGroupIDs, filterCount );
 }
 
 //向某主机发送消息
-void NetServer::SendMsg( int hostID, char *msg, int msgsize )
+void NetServer::SendMsg( int hostID, char *msg, unsigned int msgsize )
 {
 	m_pNetCard->SendMsg(hostID, msg, msgsize);
 }

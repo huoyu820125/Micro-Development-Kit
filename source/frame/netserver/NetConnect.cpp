@@ -5,8 +5,10 @@
 #include "../../../include/frame/netserver/NetConnect.h"
 #include "../../../include/frame/netserver/NetEventMonitor.h"
 #include "../../../include/frame/netserver/NetEngine.h"
+#include "../../../include/frame/netserver/HostData.h"
 #include "../../../include/mdk/atom.h"
 #include "../../../include/mdk/MemoryPool.h"
+#include "../../../include/mdk/mapi.h"
 using namespace std;
 
 namespace mdk
@@ -30,15 +32,26 @@ NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor
 	m_nDoCloseWorkCount = 0;//没有执行过NetServer::OnClose()
 	m_bIsServer = bIsServer;
 #ifdef WIN32
-	Socket::InitForIOCP(sock);	
+	Socket::InitForIOCP(sock);
 #endif
 	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();
+ 	m_pHostData = NULL;
 }
 
 NetConnect::~NetConnect()
 {
-
+	/*
+		不用检查m_autoFree
+		if m_autoFree = true,应该释放
+		if m_autoFree = false
+			if data与host解除了关联,则m_pHostData=NULL
+			else if data被析构m_pHostData=NULL
+			else data中存在host的引用,host不可能被析构
+		所以NULL != m_pHostData就一定是代理模式，执行Release()
+	*/
+	if ( NULL != m_pHostData ) m_pHostData->Release();
+	m_pHostData = NULL;
 }
 
 void NetConnect::Release()
@@ -86,7 +99,7 @@ uint32 NetConnect::GetLength()
 	return m_recvBuffer.GetLength();
 }
 
-bool NetConnect::ReadData( unsigned char* pMsg, unsigned short uLength, bool bClearCache )
+bool NetConnect::ReadData( unsigned char* pMsg, unsigned int uLength, bool bClearCache )
 {
 	m_bReadAble = m_recvBuffer.ReadData( pMsg, uLength, bClearCache );
 	if ( !m_bReadAble ) uLength = 0;
@@ -94,7 +107,7 @@ bool NetConnect::ReadData( unsigned char* pMsg, unsigned short uLength, bool bCl
 	return m_bReadAble;
 }
 
-bool NetConnect::SendData( const unsigned char* pMsg, unsigned short uLength )
+bool NetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 {
 	try
 	{
@@ -130,7 +143,7 @@ bool NetConnect::SendData( const unsigned char* pMsg, unsigned short uLength )
 		}
 		if ( !SendStart() ) return true;//已经在发送
 		//发送流程开始
-		m_pNetMonitor->AddSend( m_socket.GetSocket(), NULL, 0 );
+		return m_pNetMonitor->AddSend( m_socket.GetSocket(), NULL, 0 );
 	}
 	catch(...){}
 	return true;
@@ -205,6 +218,76 @@ void NetConnect::GetAddress( string &ip, int &port )
 	if ( !this->m_bIsServer ) m_socket.GetPeerAddress( ip, port );
 	else m_socket.GetLocalAddress( ip, port );
 	return;
+}
+
+void NetConnect::SetData( HostData *pData, bool autoFree )
+{
+	//释放已设置的数据或引用计数
+	if ( NULL != m_pHostData ) 
+	{
+		if ( m_pHostData->m_autoFree ) return;//自由模式，不能解除关联
+		NetHost unconnectHost;
+		m_pHostData->SetHost(&unconnectHost);//关联到未连接的host
+		m_pHostData->Release();//释放数据,并发GetData()分析，参考HostData::Release()内部注释
+		/*
+			与GetData并发
+			可能返回NULL，也可能返回新HostData，也可能返回无效的HostData
+			就算提前到罪愆执行，结果也一样
+			就算对整个SetData加lock控制，也不会有多大改善
+		*/
+		m_pHostData = NULL;//解除host与data的绑定
+	}
+
+	if ( NULL == pData ) return;
+
+	if ( -1 == AtomAdd(&pData->m_refCount, 1) ) return; //有线程完成了Release()的释放检查，对象即将被释放，放弃关联
+	pData->m_autoFree = autoFree;
+	/*
+		autoFree = true
+		HostData的生命周期由框架管理
+		框架保证了，地址的有效性，
+		直接复制NetHost指针,到HostData中,不增加引用计数.
+		
+
+		autoFree = false
+		HostData的生命周期由用户自行管理，框架不管
+		则复制NetHost对象到HostData中,引用计数增加，表示有用户在访问NetHost对象，
+		确保在用户释放HostData之前,NetHost永远不会被框架释放。
+	*/
+	if ( autoFree ) 
+	{
+		/*
+			代理模式，不需要增加引用计数，减回来
+			前面+1检查能通过，旧值最小应该=1，否则说明+1之后，外部又发生了重复Release()，是不合理的，触发断言
+		*/
+		if ( 1 > AtomDec(&pData->m_refCount, 1) ) 
+		{
+			mdk::mdk_assert(false);
+			return; 
+		}
+		pData->m_pHost = &m_host;//代理模式，copy规则限制了，pData不会超出host生命周期，只要pData存在，m_pHost必然存在，不必copy
+	}
+	else //自主模式
+	{
+		pData->m_hostRef = m_host;//确保m_pHost指向安全内存，将host做1份copy
+	}
+	m_pHostData = pData;//必须最后，确保GetData()并发时，返回的时是完整数据
+
+	return;
+}
+
+HostData* NetConnect::GetData()
+{
+	if ( NULL == m_pHostData ) return NULL;
+	if ( !m_pHostData->m_autoFree ) 
+	{
+		//自主模式，需要记录引用计数
+		if ( -1 == AtomAdd(&m_pHostData->m_refCount, 1) ) //取数据时，有线程执行了SetData(NULL)解除关联，绝对不会是Release()释放数据 
+		{
+			return NULL;
+		}
+	}
+	return m_pHostData;
 }
 
 }//namespace mdk

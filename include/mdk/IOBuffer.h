@@ -45,13 +45,13 @@ private:
 
 public:
 	//向缓冲区写入一段数据
-	bool WriteData( char *data, int nSize );
+	bool WriteData( char *data, unsigned int nSize );
 	/*
 	 *	从缓冲区接收一定长度的数据
 	 *	数据长度足够则成功，返回true
 	 *	否则失败，返回false
 	 */
-	bool ReadData( unsigned char *data, int uLength, bool bDel = true );
+	bool ReadData( unsigned char *data, unsigned int uLength, bool bDel = true );
 	//清空缓冲
 	void Clear();
 

@@ -93,7 +93,7 @@ uint32 STNetConnect::GetLength()
 	return m_recvBuffer.GetLength();
 }
 
-bool STNetConnect::ReadData( unsigned char* pMsg, unsigned short uLength, bool bClearCache )
+bool STNetConnect::ReadData( unsigned char* pMsg, unsigned int uLength, bool bClearCache )
 {
 	m_bReadAble = m_recvBuffer.ReadData( pMsg, uLength, bClearCache );
 	if ( !m_bReadAble ) uLength = 0;
@@ -101,12 +101,12 @@ bool STNetConnect::ReadData( unsigned char* pMsg, unsigned short uLength, bool b
 	return m_bReadAble;
 }
 
-bool STNetConnect::SendData( const unsigned char* pMsg, unsigned short uLength )
+bool STNetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 {
 	try
 	{
 		unsigned char *ioBuf = NULL;
-		int nSendSize = 0;
+		uint32 nSendSize = 0;
 		AutoLock lock(&m_sendMutex);//回复与主动通知存在并发send
 		if ( 0 >= m_sendBuffer.GetLength() )//没有等待发送的数据，可直接发送
 		{

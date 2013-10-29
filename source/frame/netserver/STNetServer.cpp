@@ -81,12 +81,12 @@ bool STNetServer::Connect(const char *ip, int port)
 	return true;
 }
 
-void STNetServer::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int msgsize, int *filterGroupIDs, int filterCount )
+void STNetServer::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount )
 {
 	m_pNetCard->BroadcastMsg( recvGroupIDs, recvCount, msg, msgsize, filterGroupIDs, filterCount );
 }
 
-void STNetServer::SendMsg( int hostID, char *msg, int msgsize )
+void STNetServer::SendMsg( int hostID, char *msg, unsigned int msgsize )
 {
 	m_pNetCard->SendMsg(hostID, msg, msgsize);
 }

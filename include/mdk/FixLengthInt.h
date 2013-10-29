@@ -5,7 +5,10 @@
 
 #ifndef WIN32
 #include <sys/types.h>
+#else
+#pragma warning(disable:4996)
 #endif
+
 
 namespace mdk
 {

@@ -32,13 +32,13 @@ STNetHost::~STNetHost()
 	if ( NULL != m_pConnect ) m_pConnect->Release();
 }
  
-bool STNetHost::Send(const unsigned char* pMsg, unsigned short uLength)
+bool STNetHost::Send(const unsigned char* pMsg, unsigned int uLength)
 {
 	return m_pConnect->SendData(pMsg, uLength);
 	return true;
 }
 
-bool STNetHost::Recv( unsigned char* pMsg, unsigned short uLength, bool bClearCache )
+bool STNetHost::Recv( unsigned char* pMsg, unsigned int uLength, bool bClearCache )
 {
 	return m_pConnect->ReadData( pMsg, uLength, bClearCache );
 }

@@ -184,4 +184,9 @@ void ThreadPool::StopIdle()
 	return;
 }
 
+int ThreadPool::GetTaskCount()
+{
+	return m_tasks.size();
+}
+
 }//namespace mdk

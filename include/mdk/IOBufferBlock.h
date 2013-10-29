@@ -46,9 +46,9 @@ private:
 	 */
 	unsigned char m_buffer[BUFBLOCK_SIZE];
 	//已收到数据的长度
-	unsigned short m_uLength;
+	unsigned int m_uLength;
 	//Recv()函数下次读取数据的开始位置
-	unsigned short m_uRecvPos;
+	unsigned int m_uRecvPos;
  
 public:
 //////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ public:
 	
 	//冲缓冲块读取uLength长度的数据
 	//返回实际读取的数据长度
-	unsigned short ReadData( unsigned char *data, unsigned short uLength, bool bDel = true );
+	unsigned int ReadData( unsigned char *data, unsigned int uLength, bool bDel = true );
 };
 
 }//namespace mdk

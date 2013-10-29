@@ -64,13 +64,30 @@ void IOBuffer::WriteFinished(unsigned short uLength)
 }
 
 //数据写入缓冲
-bool IOBuffer::WriteData( char *data, int nSize )
+bool IOBuffer::WriteData( char *data, unsigned int nSize )
 {
 	unsigned char *ioBuf = PrepareBuffer( nSize );
-	if ( NULL == ioBuf ) return false;
-	memcpy( ioBuf, data, nSize );
-	WriteFinished( nSize );
-	
+	uint32 nSendSize = 0;
+	//数据加入发送缓冲，交给底层去发送
+	while ( true )
+	{
+		if ( nSize > BUFBLOCK_SIZE )
+		{
+			ioBuf = PrepareBuffer( BUFBLOCK_SIZE );
+			memcpy( ioBuf, &data[nSendSize], BUFBLOCK_SIZE );
+			WriteFinished( BUFBLOCK_SIZE );
+			nSendSize += BUFBLOCK_SIZE;
+			nSize -= BUFBLOCK_SIZE;
+		}
+		else
+		{
+			ioBuf = PrepareBuffer( nSize );
+			memcpy( ioBuf, &data[nSendSize], nSize );
+			WriteFinished( nSize );
+			break;
+		}
+	}
+
 	return true;
 }
 
@@ -79,7 +96,7 @@ bool IOBuffer::WriteData( char *data, int nSize )
  *	数据长度足够则成功，返回true
  *	否则失败，返回false
  */
-bool IOBuffer::ReadData( unsigned char *data, int uLength, bool bDel )
+bool IOBuffer::ReadData( unsigned char *data, unsigned int uLength, bool bDel )
 {
 	//这里检查m_uDataSize不需要原子操作
 	//cpu与内存1次交换最小长度就是4byte,对于小于等于4byte的类型的取值/赋值操作，
@@ -90,8 +107,8 @@ bool IOBuffer::ReadData( unsigned char *data, int uLength, bool bDel )
 	IOBufferBlock *pRecvBlock = NULL;
 	AutoLock lock( &m_mutex );
 	vector<IOBufferBlock*>::iterator it = m_recvBufferList.begin();
-	unsigned short uRecvSize = 0;
-	unsigned short uStartPos = 0;
+	uint32 uRecvSize = 0;
+	uint32 uStartPos = 0;
 	
 	for ( ; it != m_recvBufferList.end();  )
 	{
@@ -125,7 +142,7 @@ bool IOBuffer::ReadData( unsigned char *data, int uLength, bool bDel )
 
 void IOBuffer::Clear()
 {
-	
+	AutoLock lock( &m_mutex );	
 	IOBufferBlock *pRecvBlock = NULL;
 	vector<IOBufferBlock*>::iterator it = m_recvBufferList.begin();
 	for ( ; it != m_recvBufferList.end(); it++ )

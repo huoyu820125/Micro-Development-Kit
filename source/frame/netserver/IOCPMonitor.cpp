@@ -143,7 +143,7 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 		events[count].type = pOverlapped->completiontype;
 		events[count].client = pOverlapped->sock;
 		events[count].pData = pOverlapped->m_wsaBuffer.buf;
-		events[count].uDataSize = dwIOSize;
+		events[count].uDataSize = (unsigned short)dwIOSize;
 		count++;
 	}
 	m_iocpDataPool.Free(pOverlapped);

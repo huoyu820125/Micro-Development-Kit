@@ -6,6 +6,8 @@
 
 #ifdef WIN32
 #pragma comment ( lib, "ws2_32.lib" )
+#else
+#include <netdb.h>
 #endif
 #include <stdio.h>
 using namespace std;
@@ -178,18 +180,31 @@ bool Socket::Init(protocol nProtocolType)
 /*
 	功能：客户端函数，发起TCP连接
 	参数：
-		lpszHostAddress	LPCTSTR		[In]	对方Ip地址
+		lpszHostAddress	LPCTSTR		[In]	对方Ip地址或域名
 		nHostPort		UINT		[In]	对方监听的端口
 	返回值：成功返回TRUE,失败返回FALSE
 */
 bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort)
 {
 	if ( NULL == lpszHostAddress ) return false;
+	//将域名转换为真实IP，如果lpszHostAddress本来就是ip，不影响转换结果
+ 	char ip[64]; //真实IP
+#ifdef WIN32
+ 	PHOSTENT hostinfo;   
+#else
+	struct hostent * hostinfo;   
+#endif
+	strcpy( ip, lpszHostAddress ); 
+	if((hostinfo = gethostbyname(lpszHostAddress)) != NULL)   
+	{
+		strcpy( ip, inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list) ); 
+	}
 
+	//使用真实ip进行连接
 	sockaddr_in sockAddr;
 	memset(&sockAddr,0,sizeof(sockAddr));
 	sockAddr.sin_family = AF_INET;
-	sockAddr.sin_addr.s_addr = inet_addr(lpszHostAddress);
+	sockAddr.sin_addr.s_addr = inet_addr(ip);
 	sockAddr.sin_port = htons( nHostPort );
 
 	if ( SOCKET_ERROR != connect(m_hSocket, (sockaddr*)&sockAddr, sizeof(sockAddr)) )
@@ -573,6 +588,23 @@ void Socket::GetAddress( const sockaddr_in &sockAddr, string &strIP, int &nPort 
 {
 	nPort = ntohs(sockAddr.sin_port);
 	strIP = inet_ntoa(sockAddr.sin_addr);
+}
+
+char* Socket::HostName2IP( char *hostname )
+{
+	if ( NULL == hostname ) return "";
+
+#ifdef WIN32
+	PHOSTENT hostinfo;   
+#else
+	struct hostent * hostinfo;   
+#endif
+	if ( NULL != (hostinfo = gethostbyname(hostname)) )
+	{
+		return inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list); 
+	}
+
+	return "";
 }
 
 }//namespace mdk

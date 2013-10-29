@@ -141,7 +141,7 @@ public:
 		用户也可以不理会该方法，自己创建管理分组
   
 	 */
-	void BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int msgsize, int *filterGroupIDs, int filterCount );
+	void BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount );
 	/*
 		向某主机发送消息
 
@@ -154,7 +154,7 @@ public:
 		SendMsg()内部先在连接列表中，加锁查找对象，然后还是调用STNetHost::Send()发送消息
 		在已经得到STNetHost对象的情况下，直接STNetHost::Send()效率最高，且不存在锁竞争。
 	 */
-	void SendMsg( int hostID, char *msg, int msgsize );
+	void SendMsg( int hostID, char *msg, unsigned int msgsize );
 	/*
 	 	关闭与主机的连接
 	 */

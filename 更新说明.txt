@@ -1,3 +1,39 @@
-V1.66
+V1.67
+1.mapi.h增加几个公用api
+  1.1mdk_assert代替assert()
+  1.2GetFileSize
+  1.3GetCUPNumber
+  1.4CurThreadId
+  1.5mdk_Date
 
-清除windows下的assert调用
+2.优化Logger日志类
+  2.1增加3个接口
+	SetMaxLogSize()日志最多保存这个大小的内容
+	SetMaxExistDay()日志最多存在这么多天
+	SetLogName()日至名字，会产生一个日志名的文件夹
+  2.1写各种类型日志接口，统一为2个
+	Info()输出日志
+	StreamInfo()输出流
+
+3.扩展ConfigFile配置文件类
+  增加对Section的支持
+  使用范例
+	配置文件内容
+	[ser config]
+	ip = 192.168.0.1
+	port = 8888
+	[/ser config]
+
+	ConfigFile cfg( "./test.cfg" );
+	string ip = cfg["ser config"]["ip"];
+	cfg["ser config"]["ip"] = "127.0.0.1";
+	cfg["ser config"]["port"] = 8080;//可以直接使用char*、string、int、float等进行赋值
+	cfg.save();
+
+4.ThreadPool线程池增加1个接口，GetTaskCount取得当前任务数
+
+
+5.Socket类
+  5.1优化Connect()接口，可以直接传递域名进行连接
+  5.2增加static接口HostName2IP，将域名转换成IP
+

@@ -10,6 +10,8 @@
 
 namespace mdk
 {
+	//断言
+	void mdk_assert( bool isTrue );
 	//睡眠
 	void m_sleep( long lMillSecond );
 	//地址保存到int64
@@ -30,6 +32,14 @@ namespace mdk
 	char* TrimLeft( char *str );
 	//字节高低位顺序翻转
 	int reversal(int i);
+	//取得文件大小
+	unsigned long GetFileSize(const char *filename);
+	//获取CPU数量
+	//maxCpu可能的最大cpu数，如果检测出cpu数量大于此值，则表示检测有误，将返回defaultCpuNumber
+	//defaultCpuNumber默认cpu数量，当检测出错时，将认为cpu数量为此值
+	unsigned int GetCUPNumber( int maxCpu, int defaultCpuNumber );
+	unsigned int CurThreadId();//当前线程id
+	time_t mdk_Date();//返回0时0分0秒的当前日期
 }
 
 #endif // !defined MDK_MAPI_H 

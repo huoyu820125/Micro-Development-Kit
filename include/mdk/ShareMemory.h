@@ -6,6 +6,7 @@
 #define SHAREMEMORY_H
 
 #ifdef WIN32
+#pragma warning(disable:4996)
 #include <windows.h>
 #else
 #include <sys/types.h>

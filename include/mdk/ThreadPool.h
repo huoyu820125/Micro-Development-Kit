@@ -52,7 +52,8 @@ public:
 	//接受任务
 	//fun为声明为void* fun(void*)的函数
 	void Accept( FuntionPointer fun, void *pParam );
-	
+	int GetTaskCount();
+
 protected:
 	bool CreateThread(unsigned short nNum);//在线程池中创建n个线程
 	THREAD_CONTEXT* CreateContext();//创建一个上下文

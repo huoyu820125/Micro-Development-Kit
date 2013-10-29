@@ -144,7 +144,7 @@ bool STIocp::WaitEvent( IO_EVENT &sockEvent, int timeout )
 		sockEvent.type = pOverlapped->completiontype;
 		sockEvent.client = pOverlapped->sock;
 		sockEvent.pData = pOverlapped->m_wsaBuffer.buf;
-		sockEvent.uDataSize = dwIOSize;
+		sockEvent.uDataSize = (unsigned short)dwIOSize;
 	}
 	m_iocpDataPool.Free(pOverlapped);
 	pOverlapped = NULL;

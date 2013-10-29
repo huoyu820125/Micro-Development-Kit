@@ -2,6 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "../../include/mdk/mapi.h"
 #include "../../include/mdk/Logger.h"
 
 #include <time.h>
@@ -14,7 +15,6 @@
 #include   <unistd.h>                     //chdir() 
 #include   <sys/stat.h>                 //mkdir() 
 #include   <sys/types.h>               //mkdir() 
-
 #endif
 
 namespace mdk
@@ -22,21 +22,28 @@ namespace mdk
 
 Logger::Logger()
 {
+	m_maxExistDay = 30;
+	m_maxLogSize = 50;
+	SetLogName(NULL);
 	m_bRLogOpened = false;
-	m_bELogOpened = false;
-	m_fpRunLog = m_fpErrLog = NULL;
+	m_fpRunLog = NULL;
 
 	m_bPrint = false;
-	CreateLogDir();
+}
+
+Logger::Logger(const char *name)
+{
+	m_maxExistDay = 30;
+	m_maxLogSize = 50;
+	SetLogName(name);
+	m_bRLogOpened = false;
+	m_fpRunLog = NULL;
+
+	m_bPrint = false;
 }
 
 Logger::~Logger()
 {
-	if ( NULL != m_fpErrLog ) 
-	{
-		fclose(m_fpErrLog);
-		m_fpErrLog = NULL;
-	}
 	if ( NULL != m_fpRunLog ) 
 	{
 		fclose(m_fpRunLog);
@@ -44,82 +51,76 @@ Logger::~Logger()
 	}
 }
 
-void Logger::CreateLogDir()
+void Logger::SetLogName( const char *name )
 {
-	if (-1 == access( "./log", 0 ))
-	{
-#ifdef WIN32
-		mkdir( "./log" );
-#else
-		umask(0);
-		if( 0 > mkdir("./log", 0777) )
-		{
-			printf( "create log faild\n" );
-		}
-#endif
-	}
-	if (-1 == access( "./log/err", 0 ))
-	{
-#ifdef WIN32
-		mkdir( "./log/err" );
-#else
-		umask(0);
-		if( 0 > mkdir("./log/err", 0777) )
-		{
-			printf( "create ./log/err faild\n" );
-		}
-#endif
-	}
-	if (-1 == access( "./log/access", 0 ))
-	{
-#ifdef WIN32
-		mkdir( "./log/access" );
-#else
-		umask(0);
-		if( 0 > mkdir("./log/access", 0777) )
-		{
-			printf( "create ./log/access faild\n" );
-		}
-#endif
-	}
-
-#ifndef WIN32
-	umask(0);
-	chmod("./log",S_IRWXU|S_IRWXG|S_IRWXO);
-	umask(0);
-	chmod("./log/access",S_IRWXU|S_IRWXG|S_IRWXO);
-	umask(0);
-	chmod("./log/err",S_IRWXU|S_IRWXG|S_IRWXO);
-#endif
+	if ( NULL == name )	m_name = "";
+	m_name = name;
+	CreateLogDir();
 }
 
-bool Logger::OpenErrLog()
+void Logger::SetMaxLogSize( int maxLogSize )
+{
+	m_maxLogSize = maxLogSize;
+}
+
+
+bool Logger::CreateFreeDir(const char* dir)
+{
+	if (-1 == access( dir, 0 ))
+	{
+#ifdef WIN32
+		mkdir( dir );
+#else
+		umask(0);
+		if( 0 > mkdir(dir, 0777) )
+		{
+			printf( "create %s faild\n", dir );
+			return false;
+		}
+#endif
+	}
+#ifndef WIN32
+	umask(0);
+	chmod(dir,S_IRWXU|S_IRWXG|S_IRWXO);
+#endif
+
+	return true;
+}
+
+void Logger::CreateLogDir()
+{
+	CreateFreeDir( "./log" );
+	m_runLogDir = "./log";
+	if ( "" != m_name )
+	{
+		m_runLogDir += "/" + m_name;
+		CreateFreeDir( m_runLogDir.c_str() );
+	}
+	m_runLogDir += "/run";
+	CreateFreeDir( m_runLogDir.c_str() );
+}
+
+void Logger::RenameMaxLog()
 {
 	time_t cutTime = time(NULL);
 	tm *pCurTM = localtime(&cutTime);
-	if ( m_bELogOpened ) 
-	{
-		char strTime[32];
-		strftime( strTime, 30, "%Y-%m-%d", pCurTM );
-		int nY, nM, nD;
-		sscanf( strTime, "%d-%d-%d", &nY, &nM, &nD );
-		if ( m_nErrLogCurYear == nY && 
-			m_nErrLogCurMonth == nM &&
-			m_nErrLogCurDay == nD ) return true;
-		fclose(m_fpErrLog) ;
-		m_fpErrLog = NULL;
-		m_nErrLogCurYear = nY;
-		m_nErrLogCurMonth = nM;
-		m_nErrLogCurDay = nD;
-		m_bELogOpened = false;
-	}
-	
-	char strErrLog[32];
-	strftime( strErrLog, 30, "./log/err/%Y-%m-%d.log", pCurTM );
-	m_fpErrLog = fopen( strErrLog, "a" );
-	m_bELogOpened = NULL != m_fpErrLog;
+	char log[256];
 
-	return m_bELogOpened;
+	std::string fromat = m_runLogDir + "/%Y-%m-%d.log";
+	strftime( log, 256, fromat.c_str(), pCurTM );
+	std::string maxLog = log;
+	maxLog += ".max";
+	unsigned long lsize = GetFileSize(log);
+	if ( lsize >= (unsigned long)(1024 * 1024 * m_maxLogSize) )
+	{
+		if ( m_bRLogOpened ) 
+		{
+			fclose(m_fpRunLog);
+			m_bRLogOpened = false;
+		}
+		remove(maxLog.c_str());
+		rename(log, maxLog.c_str());
+	}
 }
 
 bool Logger::OpenRunLog()
@@ -128,7 +129,7 @@ bool Logger::OpenRunLog()
 	tm *pCurTM = localtime(&cutTime);
 	if ( m_bRLogOpened ) 
 	{
-		char strTime[32];
+		char strTime[256];
 		strftime( strTime, 30, "%Y-%m-%d", pCurTM );
 		int nY, nM, nD;
 		sscanf( strTime, "%d-%d-%d", &nY, &nM, &nD );
@@ -143,25 +144,106 @@ bool Logger::OpenRunLog()
 		m_bRLogOpened = false;
 	}
 	
-	char strRunLog[32];
-	strftime( strRunLog, 30, "./log/access/%Y-%m-%d.log", pCurTM );
+	char strRunLog[256];
+	std::string fromat = m_runLogDir + "/%Y-%m-%d.log";
+	strftime( strRunLog, 256, fromat.c_str(), pCurTM );
 	m_fpRunLog = fopen( strRunLog, "a" );
 	m_bRLogOpened = NULL != m_fpRunLog;
 
 	return m_bRLogOpened;
 }
 
+#ifdef WIN32
+time_t SystemTimeToTimet(SYSTEMTIME st)
+{
+	FILETIME ft;
+	SystemTimeToFileTime( &st, &ft );
+	LONGLONG nLL;
+	ULARGE_INTEGER ui;
+	ui.LowPart = ft.dwLowDateTime;
+	ui.HighPart = ft.dwHighDateTime;
+	nLL = ((mdk::uint64)ft.dwHighDateTime << 32) + ft.dwLowDateTime;
+	time_t pt = (long)((LONGLONG)(ui.QuadPart - 116444736000000000) / 10000000);
+	return pt;
+}
+#else
+#include <dirent.h>  
+#include <sys/stat.h>  
+
+#endif
+
+
+void Logger::FindDelLog(char * path, int maxExistDay)
+{
+	maxExistDay = 5;
+	time_t curTime = mdk_Date();
+	curTime -= 86400 * (maxExistDay - 1);
+
+#ifdef WIN32
+	char szFind[MAX_PATH];
+	char szFile[MAX_PATH];
+	WIN32_FIND_DATA FindFileData;
+	time_t ftime;
+
+	strcpy( szFind, path );
+	strcat( szFind, "//*.*" );
+	HANDLE hFind = ::FindFirstFile( szFind, &FindFileData );
+	if ( INVALID_HANDLE_VALUE == hFind ) return;
+
+	do
+	{
+		if ( FindFileData.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY )
+		{
+			if ( 0 == strcmp( ".", FindFileData.cFileName )
+				|| 0 == strcmp( "..", FindFileData.cFileName ) ) continue;
+			strcpy( szFile, path );
+			strcat( szFile, "//" );
+			strcat( szFile, FindFileData.cFileName );
+			FindDelLog( szFile, maxExistDay );
+		}
+		else
+		{
+			SYSTEMTIME   st;
+			FileTimeToSystemTime(&FindFileData.ftLastWriteTime,&st);  
+			ftime = SystemTimeToTimet(st);
+			if ( ftime >= curTime ) continue;
+			std::string strRunLog = m_runLogDir + "//" + FindFileData.cFileName;
+			remove( strRunLog.c_str() );
+		}
+	}
+	while ( FindNextFile( hFind, &FindFileData ) );
+	FindClose( hFind );
+#else
+	DIR              *pDir ;  
+	struct dirent    *ent  ;  
+	int               i=0  ;  
+	char              childpath[512];  
+	pDir = opendir( path );  
+	memset( childpath, 0, sizeof(childpath) );  
+	while ( NULL != (ent = readdir(pDir)) )  
+	{  
+		if ( ent->d_type&DT_DIR )
+		{
+			if ( 0 == strcmp( ".", ent->d_name ) || 0 == strcmp( "..", ent->d_name ) ) continue;
+			sprintf( childpath, "%s/%s", path, ent->d_name );  
+			FindDelLog( childpath, maxExistDay );  
+		}  
+		else
+		{
+			std::string strRunLog = m_runLogDir + "//" + ent->d_name;
+			struct stat buf;
+			if ( -1 == stat(strRunLog.c_str(), &buf) ) continue;
+			if ( buf.st_ctime >= curTime ) continue;
+			remove( strRunLog.c_str() );
+		}
+	}  
+#endif
+
+}
+
 void Logger::DelLog( int nDay )
 {
-	time_t cutTime = time(NULL);
-	cutTime -= (86400 * nDay);
-	tm *pCurTM = localtime(&cutTime);
-	char strErrLog[32];
-	strftime( strErrLog, 30, "./log/err/%Y-%m-%d.log", pCurTM );
-	char strRunLog[32];
-	strftime( strRunLog, 30, "./log/access/%Y-%m-%d.log", pCurTM );
-	remove( strErrLog );
-	remove( strRunLog );
+ 	FindDelLog( (char*)m_runLogDir.c_str(), m_maxExistDay );
 }
 
 void Logger::SetPrintLog( bool bPrint )
@@ -169,58 +251,12 @@ void Logger::SetPrintLog( bool bPrint )
 	m_bPrint = bPrint;
 }
 
-void Logger::Error( const char *format, ... )
+void Logger::Info( const char *findKey, const char *format, ... )
 {
 	AutoLock lock( &m_writeMutex );
-	if ( !OpenErrLog() || !OpenRunLog() ) return;
-	//取得时间
-	time_t cutTime = time(NULL);
-	tm *pCurTM = localtime(&cutTime);
-	char strTime[32];
-	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
-	
-	//写入日志内容
-	fprintf( m_fpErrLog, "%s:(Error) ", strTime );
-	fprintf( m_fpRunLog, "%s:(Error) ", strTime );
-	{
-		va_list ap;
-		va_start( ap, format );
-		vfprintf( m_fpErrLog, format, ap );
-		va_end( ap );
-	}
-	{
-		va_list ap;
-		va_start( ap, format );
-		vfprintf( m_fpRunLog, format, ap );
-		va_end( ap );
-	}
-#ifdef WIN32
-	fprintf( m_fpErrLog, "\n" );
-	fprintf( m_fpRunLog, "\n" );
-#else
-	fprintf( m_fpErrLog, "\r\n" );
-	fprintf( m_fpRunLog, "\r\n" );
-#endif
-	fflush(m_fpErrLog);
-	fflush(m_fpRunLog);
+	DelLog( m_maxExistDay );
+	RenameMaxLog();
 
-	//打印日志内容
-	if ( m_bPrint ) 
-	{
-		printf( "%s:(Error) ", strTime );
-		va_list ap;
-		va_start( ap, format );
-		vprintf( format, ap );
-		va_end( ap );
-		printf( "\n" );
-	}
-
-	return;
-}
-
-void Logger::Run( const char *format, ... )
-{
-	AutoLock lock( &m_writeMutex );
 	if ( !OpenRunLog() ) return;
 	//取得时间
 	time_t cutTime = time(NULL);
@@ -228,7 +264,7 @@ void Logger::Run( const char *format, ... )
 	char strTime[32];
 	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
 	//写入日志内容
-	fprintf( m_fpRunLog, "%s:", strTime );
+	fprintf( m_fpRunLog, "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
 	va_list ap;
 	va_start( ap, format );
 	vfprintf( m_fpRunLog, format, ap );
@@ -243,60 +279,70 @@ void Logger::Run( const char *format, ... )
 	//打印日志内容
 	if ( m_bPrint ) 
 	{
-		printf( "%s:", strTime );
+		printf( "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
 		va_list ap;
 		va_start( ap, format );
 		vprintf( format, ap );
 		va_end( ap );
 		printf( "\n" );
 	}
-	
+
 	return;
 }
 
-void Logger::ErrorStream( unsigned char *stream, int nLen )
+void Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, const char *format, ... )
 {
 	AutoLock lock( &m_writeMutex );
-	if ( !OpenErrLog() || !OpenRunLog() ) return;
-	fprintf( m_fpErrLog, "Error stream:" );
-	fprintf( m_fpRunLog, "Error stream:" );
-	int i = 0;
-	for ( i = 0; i < nLen - 1; i++ ) 
-	{
-		fprintf( m_fpErrLog, "%x,", stream[i] );
-		fprintf( m_fpRunLog, "%x,", stream[i] );
-	}
-#ifdef WIN32
-	fprintf( m_fpErrLog, "%x\n", stream[i] );
-	fprintf( m_fpRunLog, "%x\n", stream[i] );
-#else
-	fprintf( m_fpErrLog, "%x\r\n", stream[i] );
-	fprintf( m_fpRunLog, "%x\r\n", stream[i] );
-#endif
-	fflush(m_fpRunLog);
-	fflush(m_fpErrLog);
-	
-	return;
-}
+	DelLog( m_maxExistDay );
+	RenameMaxLog();
 
-void Logger::RunStream( unsigned char *stream, int nLen )
-{
-	AutoLock lock( &m_writeMutex );
 	if ( !OpenRunLog() ) return;
-	fprintf( m_fpRunLog, "stream:" );
+	//取得时间
+	time_t cutTime = time(NULL);
+	tm *pCurTM = localtime(&cutTime);
+	char strTime[32];
+	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
+	//写入日志内容
+	fprintf( m_fpRunLog, "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
+	va_list ap;
+	va_start( ap, format );
+	vfprintf( m_fpRunLog, format, ap );
+	va_end( ap );
+
+	//打印日志内容
+	if ( m_bPrint ) 
+	{
+		printf( "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
+		va_list ap;
+		va_start( ap, format );
+		vprintf( format, ap );
+		va_end( ap );
+	}
+
+	//写入流
+	fprintf( m_fpRunLog, " stream:" );
+	if ( m_bPrint ) printf( " stream:" );
 	int i = 0;
 	for ( i = 0; i < nLen - 1; i++ ) 
 	{
 		fprintf( m_fpRunLog, "%x,", stream[i] );
+		if ( m_bPrint ) printf( "%x,", stream[i] );
 	}
 #ifdef WIN32
 	fprintf( m_fpRunLog, "%x\n", stream[i] );
 #else
 	fprintf( m_fpRunLog, "%x\r\n", stream[i] );
 #endif
+	if ( m_bPrint ) printf( "%x\n", stream[i] );
 	fflush(m_fpRunLog);
-	
+
+
 	return;
+}
+
+void Logger::SetMaxExistDay( int maxExistDay )
+{
+	m_maxExistDay = maxExistDay;
 }
 
 }//namespace mdk

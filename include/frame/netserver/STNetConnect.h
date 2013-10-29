@@ -54,8 +54,8 @@ public:
 	uint32 GetLength();//取得数据长度
 	//从接收缓冲中读数据，数据不够，直接返回false，无阻塞模式
 	//bClearCache为false，读出数据不会从接收缓冲删除，下次还是从相同位置读取
-	bool ReadData(unsigned char* pMsg, unsigned short uLength, bool bClearCache = true );
-	bool SendData( const unsigned char* pMsg, unsigned short uLength );
+	bool ReadData(unsigned char* pMsg, unsigned int uLength, bool bClearCache = true );
+	bool SendData( const unsigned char* pMsg, unsigned int uLength );
 	bool SendStart();//开始发送流程
 	void SendEnd();//结束发送流程
 	void Close();//关闭连接

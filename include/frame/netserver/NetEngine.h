@@ -103,8 +103,8 @@ protected:
 	virtual bool MonitorConnect(NetConnect *pConnect);//监听连接
 	virtual SOCKET ListenPort(int port);//监听一个端口,返回创建的套接字
 	//向某组连接广播消息(业务层接口)
-	void BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int msgsize, int *filterGroupIDs, int filterCount );
-	void SendMsg( int hostID, char *msg, int msgsize );//向某主机发送消息(业务层接口)
+	void BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount );
+	void SendMsg( int hostID, char *msg, unsigned int msgsize );//向某主机发送消息(业务层接口)
 private:
 	//主线程
 	void* RemoteCall Main(void*);

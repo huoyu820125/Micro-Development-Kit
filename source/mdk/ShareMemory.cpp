@@ -329,7 +329,7 @@ void ShareMemory::TestSystem()
 		s = h + m + s;
 		int ns = t2.wMilliseconds - t1.wMilliseconds;
 		s = s * 1000 + ns;
-		float ft = s / 1000.0;
+		float ft = (float)(s / 1000.0);
 		printf( "%f\n", ft );
 	}
 #else
@@ -384,7 +384,7 @@ void ShareMemory::TestFile()
 		s = h + m + s;
 		int ns = t2.wMilliseconds - t1.wMilliseconds;
 		s = s * 1000 + ns;
-		float ft = s / 1000.0;
+		float ft = (float)(s / 1000.0);
 		printf( "%f\n", ft );
 	}
 #else
@@ -437,7 +437,7 @@ void ShareMemory::TestMemory()
 		s = h + m + s;
 		int ns = t2.wMilliseconds - t1.wMilliseconds;
 		s = s * 1000 + ns;
-		float ft = s / 1000.0;
+		float ft = (float)(s / 1000.0);
 		printf( "%f\n", ft );
 	}
 #else

@@ -75,13 +75,13 @@ public:
 			数据不够，直接返回false
 			无需阻塞模式，引擎已经替用户处理好消息等待，消息到达时会有OnMsg被触发
 	*/
-	bool Recv(unsigned char* pMsg, unsigned short uLength, bool bClearCache = true );
+	bool Recv(unsigned char* pMsg, unsigned int uLength, bool bClearCache = true );
 	/**
 		发送数据
 		返回值：
 			当连接无效时，返回false
 	*/
-	bool Send(const unsigned char* pMsg, unsigned short uLength);
+	bool Send(const unsigned char* pMsg, unsigned int uLength);
 	void Close();//关闭连接
 	bool IsServer();//主机是一个服务
 	void InGroup( int groupID );//放入某分组，同一个主机可多次调用该方法，放入多个分组

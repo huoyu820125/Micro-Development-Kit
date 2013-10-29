@@ -621,7 +621,7 @@ bool NetEngine::MonitorConnect(NetConnect *pConnect)
 }
 
 //向某组连接广播消息(业务层接口)
-void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int msgsize, int *filterGroupIDs, int filterCount )
+void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount )
 {
 	//////////////////////////////////////////////////////////////////////////
 	//关闭无心跳的连接
@@ -651,7 +651,7 @@ void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, int m
 }
 
 //向某主机发送消息(业务层接口)
-void NetEngine::SendMsg( int hostID, char *msg, int msgsize )
+void NetEngine::SendMsg( int hostID, char *msg, unsigned int msgsize )
 {
 	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(hostID);

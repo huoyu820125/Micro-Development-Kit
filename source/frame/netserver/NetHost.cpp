@@ -1,5 +1,6 @@
 #include "../../../include/frame/netserver/NetHost.h"
 #include "../../../include/frame/netserver/NetConnect.h"
+#include "../../../include/frame/netserver/HostData.h"
 #include "../../../include/mdk/Socket.h"
 #include "../../../include/mdk/atom.h"
 using namespace std;
@@ -32,13 +33,13 @@ NetHost::~NetHost()
 	if ( NULL != m_pConnect ) m_pConnect->Release();
 }
  
-bool NetHost::Send(const unsigned char* pMsg, unsigned short uLength)
+bool NetHost::Send(const unsigned char* pMsg, unsigned int uLength)
 {
 	return m_pConnect->SendData(pMsg, uLength);
 	return true;
 }
 
-bool NetHost::Recv( unsigned char* pMsg, unsigned short uLength, bool bClearCache )
+bool NetHost::Recv( unsigned char* pMsg, unsigned int uLength, bool bClearCache )
 {
 	return m_pConnect->ReadData( pMsg, uLength, bClearCache );
 }
@@ -81,6 +82,17 @@ void NetHost::GetAddress( string &ip, int &port )
 {
 	m_pConnect->GetAddress(ip, port);
 	return;
+}
+
+void NetHost::SetData( HostData *pData, bool autoFree )
+{
+ 	m_pConnect->SetData( pData, autoFree );
+	return;
+}
+
+HostData* NetHost::GetData()
+{
+	return m_pConnect->GetData();
 }
 
 }  // namespace mdk

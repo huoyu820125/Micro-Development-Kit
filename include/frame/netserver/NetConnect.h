@@ -19,12 +19,15 @@
 
 namespace mdk
 {
+class HostData;
 class NetEventMonitor;
 class Socket;
 class NetEngine;
-class MemoryPool;	
+class MemoryPool;
 class NetConnect  
 {
+public:
+
 	friend class NetEngine;
 	friend class NetHost;
 	friend class IOCPFrame;
@@ -58,8 +61,8 @@ public:
 	uint32 GetLength();//取得数据长度
 	//从接收缓冲中读数据，数据不够，直接返回false，无阻塞模式
 	//bClearCache为false，读出数据不会从接收缓冲删除，下次还是从相同位置读取
-	bool ReadData(unsigned char* pMsg, unsigned short uLength, bool bClearCache = true );
-	bool SendData( const unsigned char* pMsg, unsigned short uLength );
+	bool ReadData(unsigned char* pMsg, unsigned int uLength, bool bClearCache = true );
+	bool SendData( const unsigned char* pMsg, unsigned int uLength );
 	bool SendStart();//开始发送流程
 	void SendEnd();//结束发送流程
 	void Close();//关闭连接
@@ -83,6 +86,11 @@ public:
 	 */
 	void GetServerAddress( std::string &ip, int &port );
 	
+	//设置客户数据,SetData(NULL)释放数据控制权
+	void SetData( HostData *pData, bool autoFree );
+	//取得客户数据
+	HostData* GetData();
+
 private:
 	int m_useCount;//访问计数
 	IOBuffer m_recvBuffer;//接收缓冲
@@ -105,8 +113,10 @@ private:
 	bool m_bIsServer;//主机类型服务器
 	std::map<int,int> m_groups;//所属分组
 	MemoryPool *m_pMemoryPool;
-	
+	HostData *m_pHostData;//主机数据
+
 };
+
 
 }//namespace mdk
 

@@ -7,9 +7,13 @@
 #include "../../include/mdk/mapi.h"
 #ifdef WIN32
 #include <windows.h>
+#include <sys/stat.h> 
 #else
 #include <unistd.h>
+#include <sys/stat.h> 
 #endif
+#include <time.h>
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -18,6 +22,14 @@ using namespace std;
 
 namespace mdk
 {
+
+void mdk_assert( bool isTrue )
+{
+	if ( isTrue ) return;
+	char *p = NULL;
+	*p = 1;
+	exit(0);
+}
 
 void m_sleep( long lMillSecond )
 {
@@ -154,6 +166,70 @@ int reversal(int i)
 	out += ((i >> 8) << 24) >> 8;
 	out += ((i >> 16) << 24) >> 16;
 	return out;
+}
+
+unsigned long GetFileSize(const char *filename)  
+{  
+	unsigned long filesize = 0;      
+	struct stat statbuff;  
+	if(stat(filename, &statbuff) < 0) return filesize;  
+	else  filesize = statbuff.st_size;  
+	return filesize;  
+}  
+
+unsigned int GetCUPNumber(int maxCpu, int defaultCpuNumber)
+{
+#ifdef WIN32
+	SYSTEM_INFO sysInfo;
+	::GetSystemInfo(&sysInfo);
+	int dwNumCpu = sysInfo.dwNumberOfProcessors;
+	if ( dwNumCpu > maxCpu ) return defaultCpuNumber;
+	return dwNumCpu;
+#else
+	unsigned int dwNumCpu = sysconf(_SC_NPROCESSORS_ONLN);
+	if ( dwNumCpu > maxCpu ) return defaultCpuNumber;
+	return dwNumCpu; 
+#endif
+}
+
+#ifndef WIN32
+#include <linux/unistd.h>
+#include <sys/syscall.h>
+/*
+syscall(__NR_gettid)或者syscall(SYS_gettid)
+SYS_gettid与__NR_gettid是相等的常量
+在64bit=186，在32bit=224
+
+命令行查看程序线程id方法
+首先使用[pgrep 进程名]指令显示出主线程id
+然后使用[ls /proc/主线程id/task/]显示所有子线程id
+*/
+#define gettid() syscall(__NR_gettid)
+#endif
+
+unsigned int CurThreadId()
+{
+#ifdef WIN32
+	return GetCurrentThreadId();
+#else
+	return gettid();
+#endif
+}
+
+//返回0时0分0秒的当前日期
+time_t mdk_Date()
+{
+	time_t curTime = time(NULL);
+	tm *pTm = localtime(&curTime);
+	char hour[32];
+	char mintue[32];
+	char second[32];
+	strftime( hour, 30, "%H", pTm );
+	strftime( mintue, 30, "%M", pTm );
+	strftime( second, 30, "%S", pTm );
+	int sumSecond = atoi(hour) * 3600 + atoi(mintue) * 60 + atoi(second);
+	curTime -= sumSecond;
+	return curTime;
 }
 
 }
