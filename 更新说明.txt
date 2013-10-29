@@ -1,10 +1,12 @@
 V1.67
-1.mapi.h增加几个公用api
-  1.1mdk_assert代替assert()
-  1.2GetFileSize
-  1.3GetCUPNumber
-  1.4CurThreadId
-  1.5mdk_Date
+1.服务器框架改动
+  1.1增加表示连接数据的基础类HostData
+	用户直接从HostData派生自己的数据类型即可
+	通过NetHost::SetData()接口将数据与连接关联
+	具体使用方法参考头文件
+  1.2NetHost的IO接口优化
+	数据长度，从原来的unsigned short扩大到unsigned int
+	
 
 2.优化Logger日志类
   2.1增加3个接口
@@ -35,5 +37,14 @@ V1.67
 
 5.Socket类
   5.1优化Connect()接口，可以直接传递域名进行连接
-  5.2增加static接口HostName2IP，将域名转换成IP
+  5.2增加static接口HostName2IP()，将域名转换成IP
 
+
+6.mapi.h增加几个公用api
+  6.1mdk_assert代替assert()
+  6.2GetFileSize
+  6.3GetCUPNumber
+  6.4CurThreadId
+  6.5mdk_Date
+
+7.优化一些造成编译警告的代码
