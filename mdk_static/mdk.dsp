@@ -240,6 +240,14 @@ SOURCE=..\include\frame\netserver\EpollMonitor.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\source\frame\netserver\HostData.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\frame\netserver\HostData.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\source\frame\netserver\IOCPFrame.cpp
 # End Source File
 # Begin Source File
