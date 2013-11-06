@@ -54,7 +54,7 @@ Logger::~Logger()
 void Logger::SetLogName( const char *name )
 {
 	if ( NULL == name )	m_name = "";
-	m_name = name;
+	else m_name = name;
 	CreateLogDir();
 }
 
