@@ -22,9 +22,12 @@ namespace mdk
 
 Logger::Logger()
 {
+	m_isInit = false;
+	m_index = 0;
 	m_maxExistDay = 30;
 	m_maxLogSize = 50;
-	SetLogName(NULL);
+	m_runLogDir = "";
+	m_name = "";
 	m_bRLogOpened = false;
 	m_fpRunLog = NULL;
 
@@ -33,8 +36,12 @@ Logger::Logger()
 
 Logger::Logger(const char *name)
 {
+	m_isInit = false;
+	m_index = 0;
 	m_maxExistDay = 30;
 	m_maxLogSize = 50;
+	m_runLogDir = "";
+	m_name = "";
 	SetLogName(name);
 	m_bRLogOpened = false;
 	m_fpRunLog = NULL;
@@ -51,18 +58,18 @@ Logger::~Logger()
 	}
 }
 
-void Logger::SetLogName( const char *name )
+bool  Logger::SetLogName( const char *name )
 {
+	if ( m_isInit ) return false;
 	if ( NULL == name )	m_name = "";
 	else m_name = name;
-	CreateLogDir();
+	return CreateLogDir();
 }
 
 void Logger::SetMaxLogSize( int maxLogSize )
 {
 	m_maxLogSize = maxLogSize;
 }
-
 
 bool Logger::CreateFreeDir(const char* dir)
 {
@@ -87,17 +94,16 @@ bool Logger::CreateFreeDir(const char* dir)
 	return true;
 }
 
-void Logger::CreateLogDir()
+bool Logger::CreateLogDir()
 {
+	if ( m_isInit ) return false;
 	CreateFreeDir( "./log" );
 	m_runLogDir = "./log";
-	if ( "" != m_name )
-	{
-		m_runLogDir += "/" + m_name;
-		CreateFreeDir( m_runLogDir.c_str() );
-	}
-	m_runLogDir += "/run";
+	if ( "" != m_name ) m_runLogDir += "/" + m_name;
+	else m_runLogDir += "/run";
 	CreateFreeDir( m_runLogDir.c_str() );
+	m_isInit = true;
+	return true;
 }
 
 void Logger::RenameMaxLog()
@@ -108,8 +114,6 @@ void Logger::RenameMaxLog()
 
 	std::string fromat = m_runLogDir + "/%Y-%m-%d.log";
 	strftime( log, 256, fromat.c_str(), pCurTM );
-	std::string maxLog = log;
-	maxLog += ".max";
 	unsigned long lsize = GetFileSize(log);
 	if ( lsize >= (unsigned long)(1024 * 1024 * m_maxLogSize) )
 	{
@@ -118,8 +122,10 @@ void Logger::RenameMaxLog()
 			fclose(m_fpRunLog);
 			m_bRLogOpened = false;
 		}
-		remove(maxLog.c_str());
-		rename(log, maxLog.c_str());
+		m_index++;
+		char maxLog[1024];
+		sprintf( maxLog, "%s.%d", log, m_index );
+		rename(log, maxLog);
 	}
 }
 
@@ -142,6 +148,7 @@ bool Logger::OpenRunLog()
 		m_nRunLogCurMonth = nM;
 		m_nRunLogCurDay = nD;
 		m_bRLogOpened = false;
+		m_index = 0;
 	}
 	
 	char strRunLog[256];
@@ -251,20 +258,25 @@ void Logger::SetPrintLog( bool bPrint )
 	m_bPrint = bPrint;
 }
 
-void Logger::Info( const char *findKey, const char *format, ... )
+bool Logger::Info( const char *findKey, const char *format, ... )
 {
 	AutoLock lock( &m_writeMutex );
+	if ( !m_isInit ) 
+	{
+		if ( !SetLogName(NULL) ) return m_isInit;
+	}
+
 	DelLog( m_maxExistDay );
 	RenameMaxLog();
 
-	if ( !OpenRunLog() ) return;
+	if ( !OpenRunLog() ) return false;
 	//取得时间
 	time_t cutTime = time(NULL);
 	tm *pCurTM = localtime(&cutTime);
 	char strTime[32];
 	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
 	//写入日志内容
-	fprintf( m_fpRunLog, "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
+	fprintf( m_fpRunLog, "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
 	va_list ap;
 	va_start( ap, format );
 	vfprintf( m_fpRunLog, format, ap );
@@ -279,7 +291,7 @@ void Logger::Info( const char *findKey, const char *format, ... )
 	//打印日志内容
 	if ( m_bPrint ) 
 	{
-		printf( "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
+		printf( "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
 		va_list ap;
 		va_start( ap, format );
 		vprintf( format, ap );
@@ -287,23 +299,28 @@ void Logger::Info( const char *findKey, const char *format, ... )
 		printf( "\n" );
 	}
 
-	return;
+	return true;
 }
 
-void Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, const char *format, ... )
+bool Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, const char *format, ... )
 {
 	AutoLock lock( &m_writeMutex );
+	if ( !m_isInit ) 
+	{
+		if ( !SetLogName(NULL) ) return m_isInit;
+	}
+
 	DelLog( m_maxExistDay );
 	RenameMaxLog();
 
-	if ( !OpenRunLog() ) return;
+	if ( !OpenRunLog() ) return false;
 	//取得时间
 	time_t cutTime = time(NULL);
 	tm *pCurTM = localtime(&cutTime);
 	char strTime[32];
 	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
 	//写入日志内容
-	fprintf( m_fpRunLog, "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
+	fprintf( m_fpRunLog, "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
 	va_list ap;
 	va_start( ap, format );
 	vfprintf( m_fpRunLog, format, ap );
@@ -312,7 +329,7 @@ void Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, c
 	//打印日志内容
 	if ( m_bPrint ) 
 	{
-		printf( "%s (%s) (Tid:%d) ", findKey, strTime, CurThreadId() );
+		printf( "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
 		va_list ap;
 		va_start( ap, format );
 		vprintf( format, ap );
@@ -337,7 +354,7 @@ void Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, c
 	fflush(m_fpRunLog);
 
 
-	return;
+	return true;
 }
 
 void Logger::SetMaxExistDay( int maxExistDay )

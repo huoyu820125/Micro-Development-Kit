@@ -13,16 +13,36 @@ namespace mdk
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+ConfigFile::ConfigFile()
+{
+	m_strName = "";
+	m_pFile = NULL;
+}
+
 ConfigFile::ConfigFile( const char *strName )
 {
-	m_strName = strName;
+	m_strName = "";
 	m_pFile = NULL;
-	mdk_assert( ReadFile() );
+	mdk_assert( ReadConfig(strName) );
 }
 
 ConfigFile::~ConfigFile()
 {
 	Save();
+}
+
+bool ConfigFile::ReadConfig( const char *fileName )
+{
+	if ( "" != m_strName ) return false;//已经读取了配置
+	if ( NULL == fileName ) return false;
+	m_strName = fileName;
+	if ( !ReadFile() ) 
+	{
+		m_strName = "";
+		return false;
+	}
+
+	return true;
 }
 
 //关闭文件

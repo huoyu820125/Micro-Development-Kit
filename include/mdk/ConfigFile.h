@@ -100,12 +100,15 @@ typedef std::map<std::string,CFGSection> CFGSectionMap;
 class ConfigFile  
 {
 public:
+	ConfigFile();
 	ConfigFile( const char *strName );
 	virtual ~ConfigFile();
 	
 public:
 	//读或写配置值
 	CFGSection& operator []( std::string name );
+	//读取配置,只能成功读取1次,一旦读取成功,就不能再读取,再调用都将返回false
+	bool ReadConfig( const char *fileName );
 	bool Save();
 private:
 	//打开文件
