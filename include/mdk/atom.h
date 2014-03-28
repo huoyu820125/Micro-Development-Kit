@@ -10,7 +10,7 @@
 namespace mdk
 {
 
-//自增
+//自增,返回新值
 inline uint32 AtomSelfAdd(void * var) 
 {
 #ifdef WIN32
@@ -20,7 +20,7 @@ inline uint32 AtomSelfAdd(void * var)
 #endif
 }
 
-//自减
+//自减,返回新值
 inline uint32 AtomSelfDec(void * var) 
 {
 #ifdef WIN32
@@ -30,7 +30,7 @@ inline uint32 AtomSelfDec(void * var)
 #endif
 }
 
-//加一个值
+//加一个值,返回旧值
 inline uint32 AtomAdd(void * var, const uint32 value) 
 {
 #ifdef WIN32
@@ -40,7 +40,7 @@ inline uint32 AtomAdd(void * var, const uint32 value)
 #endif
 }
 
-//减一个值
+//减一个值,返回旧值
 inline uint32 AtomDec(void * var, int32 value) 
 {
 	value = value * -1;

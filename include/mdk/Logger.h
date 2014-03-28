@@ -53,6 +53,7 @@ private:
 	int m_maxLogSize;//日志文件最大尺寸
 	int m_maxExistDay;
 	int m_index;//日志编号
+	char *m_exeDir;
 };
 
 }//namespace mdk

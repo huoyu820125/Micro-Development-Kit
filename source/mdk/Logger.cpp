@@ -7,6 +7,7 @@
 
 #include <time.h>
 #include <stdarg.h>
+#include <cstring>
 
 #ifdef WIN32
 #include <io.h>
@@ -32,6 +33,8 @@ Logger::Logger()
 	m_fpRunLog = NULL;
 
 	m_bPrint = false;
+	m_exeDir = new char[2048];
+	GetExeDir(m_exeDir, 2048);
 }
 
 Logger::Logger(const char *name)
@@ -47,6 +50,10 @@ Logger::Logger(const char *name)
 	m_fpRunLog = NULL;
 
 	m_bPrint = false;
+	if ( NULL != m_exeDir )
+	{
+		delete[]m_exeDir;
+	}
 }
 
 Logger::~Logger()
@@ -97,8 +104,9 @@ bool Logger::CreateFreeDir(const char* dir)
 bool Logger::CreateLogDir()
 {
 	if ( m_isInit ) return false;
-	CreateFreeDir( "./log" );
-	m_runLogDir = "./log";
+	m_runLogDir = m_exeDir;
+	m_runLogDir += "/log";
+	CreateFreeDir( m_runLogDir.c_str() );
 	if ( "" != m_name ) m_runLogDir += "/" + m_name;
 	else m_runLogDir += "/run";
 	CreateFreeDir( m_runLogDir.c_str() );

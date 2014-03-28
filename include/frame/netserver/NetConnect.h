@@ -114,6 +114,8 @@ private:
 	std::map<int,int> m_groups;//所属分组
 	MemoryPool *m_pMemoryPool;
 	HostData *m_pHostData;//主机数据
+	mdk::Mutex m_mutexData;//主机数据锁
+	bool m_autoFreeData;
 
 };
 

@@ -4,6 +4,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+
 #include "../../include/mdk/mapi.h"
 #ifdef WIN32
 #include <windows.h>
@@ -11,7 +13,9 @@
 #else
 #include <unistd.h>
 #include <sys/stat.h> 
+#include <unistd.h>
 #endif
+
 #include <time.h>
 
 //////////////////////////////////////////////////////////////////////
@@ -230,6 +234,43 @@ time_t mdk_Date()
 	int sumSecond = atoi(hour) * 3600 + atoi(mintue) * 60 + atoi(second);
 	curTime -= sumSecond;
 	return curTime;
+}
+
+bool GetExeDir( char *exeDir, int size )
+{
+#ifdef WIN32
+	TCHAR *pExepath = (TCHAR*)exeDir;
+	GetModuleFileName(NULL, pExepath, size);
+	char drive[_MAX_DRIVE];
+	char dir[_MAX_DIR];
+	char fname[_MAX_FNAME];
+	char ext[_MAX_EXT];
+
+	_splitpath( pExepath, drive, dir, fname, ext);
+	_makepath( pExepath, drive, dir, NULL, NULL);
+	return true;
+#else
+	int rval;
+	char* last_slash;
+
+	//读符号链接 /proc/self/exe 的目标
+	rval = readlink ("/proc/self/exe", exeDir, size);
+	if (rval == -1) //readlink调用失败
+	{
+		strcpy( exeDir, "./" );
+		return false;
+	}
+	exeDir[rval] = '\0';
+	last_slash = strrchr (exeDir, '/');
+	if ( NULL == last_slash || exeDir == last_slash )//一些异常正在发生
+	{
+		strcpy( exeDir, "./" );
+		return false;
+	}
+	size = last_slash - exeDir;
+	exeDir[size] = '\0';
+#endif
+	return true;
 }
 
 }

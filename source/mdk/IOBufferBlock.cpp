@@ -8,7 +8,11 @@ namespace mdk
 {
 
 MemoryPool* IOBufferBlock::ms_pMemoryPool = new MemoryPool( sizeof(IOBufferBlock), 500 );
-Mutex* IOBufferBlock::ms_pPoolMutex = new Mutex;
+
+void IOBufferBlock::ReleaseMemoryPool()
+{
+	delete ms_pMemoryPool;
+}
 
 void* IOBufferBlock::operator new(size_t uObjectSize)
 {

@@ -1,50 +1,11 @@
-V1.67
-1.服务器框架改动
-  1.1增加表示连接数据的基础类HostData
-	用户直接从HostData派生自己的数据类型即可
-	通过NetHost::SetData()接口将数据与连接关联
-	具体使用方法参考头文件
-  1.2NetHost的IO接口优化
-	数据长度，从原来的unsigned short扩大到unsigned int
-	
-
-2.优化Logger日志类
-  2.1增加3个接口
-	SetMaxLogSize()日志最多保存这个大小的内容
-	SetMaxExistDay()日志最多存在这么多天
-	SetLogName()日至名字，会产生一个日志名的文件夹
-  2.1写各种类型日志接口，统一为2个
-	Info()输出日志
-	StreamInfo()输出流
-
-3.扩展ConfigFile配置文件类
-  增加对Section的支持
-  使用范例
-	配置文件内容
-	[ser config]
-	ip = 192.168.0.1
-	port = 8888
-	[/ser config]
-
-	ConfigFile cfg( "./test.cfg" );
-	string ip = cfg["ser config"]["ip"];
-	cfg["ser config"]["ip"] = "127.0.0.1";
-	cfg["ser config"]["port"] = 8080;//可以直接使用char*、string、int、float等进行赋值
-	cfg.save();
-
-4.ThreadPool线程池增加1个接口，GetTaskCount取得当前任务数
-
-
-5.Socket类
-  5.1优化Connect()接口，可以直接传递域名进行连接
-  5.2增加static接口HostName2IP()，将域名转换成IP
-
-
-6.mapi.h增加几个公用api
-  6.1mdk_assert代替assert()
-  6.2GetFileSize
-  6.3GetCUPNumber
-  6.4CurThreadId
-  6.5mdk_Date
-
-7.优化一些造成编译警告的代码
+V1.69(2014-03-28 18:49)
+1.增加性能统计类完成时间FinishedTime
+2.增加读写锁SRWLock
+3.Socket类Connect增加超时参数，解决linux下默认超时时间太长（5分钟左右）的问题
+4.mapi.h增加取得exe文件位置函数
+5.Logger不使用./，改用exe文件位置作为目录
+6.IOBufferBlock删除无用static成员
+  增加释放全局static对象的接口
+9.NetEngine小改动，参考代码
+8.NetHost拷贝构造函数在std::map[key] = nullhost时候，崩溃，修正兼容
+9.修正HostData自主模式并发bug，NetConnect.Set/GetData()加局部锁

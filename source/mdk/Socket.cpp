@@ -184,7 +184,7 @@ bool Socket::Init(protocol nProtocolType)
 		nHostPort		UINT		[In]	对方监听的端口
 	返回值：成功返回TRUE,失败返回FALSE
 */
-bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort)
+bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort, long lSecond )
 {
 	if ( NULL == lpszHostAddress ) return false;
 	//将域名转换为真实IP，如果lpszHostAddress本来就是ip，不影响转换结果
@@ -207,12 +207,23 @@ bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort)
 	sockAddr.sin_addr.s_addr = inet_addr(ip);
 	sockAddr.sin_port = htons( nHostPort );
 
+	char opt[256];
+	socklen_t optSize;
+	getsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, opt, &optSize);
+
+	struct timeval timeo = {lSecond, 0};
+	socklen_t len = sizeof(timeo);
+	timeo.tv_sec = lSecond;
+	setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeo, len);
+
 	if ( SOCKET_ERROR != connect(m_hSocket, (sockaddr*)&sockAddr, sizeof(sockAddr)) )
 	{
+		setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, opt, optSize);
 		InitPeerAddress();
 		InitLocalAddress();
 		return true;
 	}
+	setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, opt, optSize);
 
 	return false;
 }

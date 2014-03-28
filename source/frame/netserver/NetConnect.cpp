@@ -37,6 +37,7 @@ NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor
 	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();
  	m_pHostData = NULL;
+	m_autoFreeData = true;
 }
 
 NetConnect::~NetConnect()
@@ -222,12 +223,14 @@ void NetConnect::GetAddress( string &ip, int &port )
 
 void NetConnect::SetData( HostData *pData, bool autoFree )
 {
+	m_autoFreeData = autoFree;
 	//释放已设置的数据或引用计数
 	if ( NULL != m_pHostData ) 
 	{
 		if ( m_pHostData->m_autoFree ) return;//自由模式，不能解除关联
 		NetHost unconnectHost;
 		m_pHostData->SetHost(&unconnectHost);//关联到未连接的host
+		mdk::AutoLock lock(&m_mutexData);
 		m_pHostData->Release();//释放数据,并发GetData()分析，参考HostData::Release()内部注释
 		/*
 			与GetData并发
@@ -278,6 +281,9 @@ void NetConnect::SetData( HostData *pData, bool autoFree )
 
 HostData* NetConnect::GetData()
 {
+	if ( m_autoFreeData ) return m_pHostData;
+
+	mdk::AutoLock lock(&m_mutexData);
 	if ( NULL == m_pHostData ) return NULL;
 	if ( !m_pHostData->m_autoFree ) 
 	{

@@ -356,7 +356,17 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 	{
 		if ( !MonitorConnect(pConnect) )
 		{
-			CloseConnect(pConnect->GetSocket()->GetSocket());
+
+			/*
+				CloseConnect(SOCKET)是用户接口，属于带有主观意愿，此接口被调用，表示用户希望关闭链接
+				而底层的任何关闭动作都是非主观的，所以不应该调用用户接口，以用户意图在这里被执行。
+				目前CloseConnect(SOCKET)中没有用户意图，此处修改是为以后的更新做准备
+			 */
+			//CloseConnect(pConnect->GetSocket()->GetSocket());
+			AutoLock lock( &m_connectsMutex );
+			ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
+			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
+			CloseConnect( itNetConnect );
 		}
 	}
 	pConnect->Release();//业务层使用完毕,释放共享对象

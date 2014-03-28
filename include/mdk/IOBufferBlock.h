@@ -22,8 +22,8 @@ class IOBufferBlock
 private:
 	//内存池，在这里为该类型的对象分配内存
 	static MemoryPool* ms_pMemoryPool;
-	//内存池线程安全锁
-	static Mutex* ms_pPoolMutex;
+public:
+	static void ReleaseMemoryPool();
 public:
 	//new运算符重载
 	void* operator new(size_t uObjectSize);

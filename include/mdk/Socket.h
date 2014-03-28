@@ -150,7 +150,7 @@ public:
 			nHostPort		UINT		[In]	对方监听的端口
 		返回值：成功返回TRUE,失败返回FALSE
 	*/
-	bool Connect( const char* lpszHostAddress, unsigned short nHostPort );
+	bool Connect( const char* lpszHostAddress, unsigned short nHostPort, long lSecond = 10 );
 
 	/*
 		功能：服务端方法，开始网络服务

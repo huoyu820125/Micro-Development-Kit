@@ -105,6 +105,14 @@ SOURCE=..\include\mdk\Executor.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\source\mdk\FinishedTime.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\mdk\FinishedTime.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\include\mdk\FixLengthInt.h
 # End Source File
 # Begin Source File
@@ -190,6 +198,14 @@ SOURCE=..\source\mdk\Socket.cpp
 # Begin Source File
 
 SOURCE=..\include\mdk\Socket.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\source\mdk\SRWLock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\mdk\SRWLock.h
 # End Source File
 # Begin Source File
 
