@@ -1,11 +1,2 @@
-V1.69(2014-03-28 18:49)
-1.增加性能统计类完成时间FinishedTime
-2.增加读写锁SRWLock
-3.Socket类Connect增加超时参数，解决linux下默认超时时间太长（5分钟左右）的问题
-4.mapi.h增加取得exe文件位置函数
-5.Logger不使用./，改用exe文件位置作为目录
-6.IOBufferBlock删除无用static成员
-  增加释放全局static对象的接口
-9.NetEngine小改动，参考代码
-8.NetHost拷贝构造函数在std::map[key] = nullhost时候，崩溃，修正兼容
-9.修正HostData自主模式并发bug，NetConnect.Set/GetData()加局部锁
+V1.70(2014-05-15 18:00)
+1.修正linux下链接超过2万后有几率卡住，换了新构架

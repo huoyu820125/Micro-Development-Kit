@@ -13,7 +13,6 @@
 
 namespace mdk
 {
-void XXSleep( long lSecond );
 class STNetConnect;
 class NetHost;
 class NetEventMonitor;

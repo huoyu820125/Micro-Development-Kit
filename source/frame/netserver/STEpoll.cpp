@@ -84,7 +84,18 @@ bool STEpoll::Stop()
 int STEpoll::WaitEvent( int timeout )
 {
 #ifndef WIN32
-	return epoll_wait(m_hEpoll, m_events, m_nMaxMonitor, timeout );
+	int count;
+	while ( true )
+	{
+		count == epoll_wait(m_hEpoll, m_events, m_nMaxMonitor, timeout );
+		if ( -1 == count ) 
+		{
+			if ( EINTR == errno ) continue;
+			return count;
+		}
+		break;
+	}
+	return count;	
 #endif
 	return -1;
 }

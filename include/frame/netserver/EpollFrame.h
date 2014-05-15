@@ -6,9 +6,9 @@
 #define MDK_EPOLLFRAME_H
 
 #include "NetEngine.h"
+
 namespace mdk
 {
-
 class EpollFrame : public NetEngine  
 {
 public:
@@ -24,7 +24,12 @@ protected:
 	connectState SendData(NetConnect *pConnect, unsigned short uSize);
 	SOCKET ListenPort(int port);//监听一个端口,返回创建的套接字
 	bool MonitorConnect(NetConnect *pConnect);//监听连接
-	
+
+	void NewConnectMonitor();
+	void DataMonitor();
+	void SendAbleMonitor();
+
+public:
 };
 
 }//namespace mdk

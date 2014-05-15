@@ -113,8 +113,15 @@ bool NetEngine::Start()
 	}
 	m_workThreads.Start( m_workThreadCount );
 	int i = 0;
-	for ( ; i < m_ioThreadCount; i++ ) m_ioThreads.Accept( Executor::Bind(&NetEngine::NetMonitorTask), this, NULL );
+	for ( i = 0; i < m_ioThreadCount; i++ ) m_ioThreads.Accept( Executor::Bind(&NetEngine::NetMonitorTask), this, NULL);
+#ifndef WIN32
+	for ( i = 0; i < m_ioThreadCount; i++ ) m_ioThreads.Accept( Executor::Bind(&NetEngine::NetMonitorTask), this, (void*)1 );
+	for ( i = 0; i < m_ioThreadCount; i++ ) m_ioThreads.Accept( Executor::Bind(&NetEngine::NetMonitorTask), this, (void*)2 );
+	m_ioThreads.Start( m_ioThreadCount * 3 );
+#else
 	m_ioThreads.Start( m_ioThreadCount );
+#endif
+	
 	if ( !ListenAll() )
 	{
 		Stop();
@@ -333,6 +340,15 @@ bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 
 void* NetEngine::ConnectWorker( NetConnect *pConnect )
 {
+	if ( !m_pNetMonitor->AddMonitor(pConnect->GetSocket()->GetSocket()) ) 
+	{
+		AutoLock lock( &m_connectsMutex );
+		ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
+		if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
+		CloseConnect( itNetConnect );
+		pConnect->Release();
+		return 0;
+	}
 	m_pNetServer->OnConnect( pConnect->m_host );
 	/*
 		监听连接
@@ -343,7 +359,7 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 		※尚未加入监听，pConnect对象不存在并发线程访问
 		如果OnConnect业务中，没有关闭连接，才能加入监听
 
-		※如果不检查m_bConnect，则MonitorConnect有可能成功，导致OnData有机会触发。
+		※如果不检查m_bConnect，则AddRecv有可能成功，导致OnData有机会触发。
 		因为CloseConnect方法只是设置了关闭连接的标志，并将NetConnect从连接列表删除，
 		并没有真的关闭socket。
 		这是为了保证socket句柄在NetServer::OnClose业务完成前，不被系统重复使用，
@@ -354,23 +370,31 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 	*/
 	if ( pConnect->m_bConnect )
 	{
-		if ( !MonitorConnect(pConnect) )
+#ifdef WIN32
+		if ( !m_pNetMonitor->AddRecv( 
+			pConnect->GetSocket()->GetSocket(), 
+			(char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)), 
+			BUFBLOCK_SIZE ) )
 		{
-
-			/*
-				CloseConnect(SOCKET)是用户接口，属于带有主观意愿，此接口被调用，表示用户希望关闭链接
-				而底层的任何关闭动作都是非主观的，所以不应该调用用户接口，以用户意图在这里被执行。
-				目前CloseConnect(SOCKET)中没有用户意图，此处修改是为以后的更新做准备
-			 */
-			//CloseConnect(pConnect->GetSocket()->GetSocket());
 			AutoLock lock( &m_connectsMutex );
 			ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
 			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
 			CloseConnect( itNetConnect );
 		}
+#else
+		if ( !m_pNetMonitor->AddRecv( 
+			pConnect->GetSocket()->GetSocket(), 
+			NULL, 
+			0 ) )
+		{
+			AutoLock lock( &m_connectsMutex );
+			ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
+			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
+			CloseConnect( itNetConnect );
+		}
+#endif
 	}
-	pConnect->Release();//业务层使用完毕,释放共享对象
-	
+	pConnect->Release();
 	return 0;
 }
 
@@ -622,12 +646,6 @@ void NetEngine::SetServerClose(NetConnect *pConnect)
 		it->second = INVALID_SOCKET;
 		break;
 	}
-}
-
-//监听连接
-bool NetEngine::MonitorConnect(NetConnect *pConnect)
-{
-	return false;
 }
 
 //向某组连接广播消息(业务层接口)

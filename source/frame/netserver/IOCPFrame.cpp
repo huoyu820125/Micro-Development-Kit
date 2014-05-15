@@ -137,7 +137,7 @@ SOCKET IOCPFrame::ListenPort(int port)
 		return INVALID_SOCKET;
 	}
 	int i = 0;
-	for ( ; i < m_ioThreadCount; i++ ) 
+	for ( ; i < 500; i++ ) 
 	{
 		if ( !m_pNetMonitor->AddAccept( listenSock.GetSocket() ) )
 		{
@@ -146,16 +146,6 @@ SOCKET IOCPFrame::ListenPort(int port)
 		}
 	}
 	return listenSock.Detach();
-}
-
-//¼àÌýÁ¬½Ó
-bool IOCPFrame::MonitorConnect(NetConnect *pConnect)
-{
-	if ( !m_pNetMonitor->AddMonitor(pConnect->GetSocket()->GetSocket()) ) return false;
-	return m_pNetMonitor->AddRecv( 
-		pConnect->GetSocket()->GetSocket(), 
-		(char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)), 
-		BUFBLOCK_SIZE );
 }
 
 }//namespace mdk
