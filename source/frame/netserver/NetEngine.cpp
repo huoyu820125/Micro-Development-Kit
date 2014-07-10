@@ -304,17 +304,20 @@ void NetEngine::CloseConnect( ConnectList::iterator it )
 					而不能发送方主动Close,所以不可能遗漏数据
 					如果发送放主动close，服务器无论如何设计，都没办法保证收到最后的这次数据
 	 */
-	if ( 0 == AtomAdd(&pConnect->m_nReadCount, 1) ) NotifyOnClose(pConnect);
+	NotifyOnClose(pConnect);
 	pConnect->Release();//连接断开释放共享对象
 	return;
 }
 
 void NetEngine::NotifyOnClose(NetConnect *pConnect)
 {
-	if ( 0 == AtomAdd(&pConnect->m_nDoCloseWorkCount, 1) )//只有1个线程执行OnClose，且仅执行1次
+	if ( 0 == AtomAdd(&pConnect->m_nReadCount, 1) )  
 	{
-		AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
-		m_workThreads.Accept( Executor::Bind(&NetEngine::CloseWorker), this, pConnect);
+		if ( 0 == AtomAdd(&pConnect->m_nDoCloseWorkCount, 1) )//只有1个线程执行OnClose，且仅执行1次
+		{
+			AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
+			m_workThreads.Accept( Executor::Bind(&NetEngine::CloseWorker), this, pConnect);
+		}
 	}
 }
 
@@ -479,9 +482,13 @@ void* NetEngine::MsgWorker( NetConnect *pConnect )
 {
 	for ( ; !m_stop; )
 	{
+		if ( !pConnect->m_bConnect ) 
+		{
+			pConnect->m_nReadCount = 0;
+			break;
+		}
 		pConnect->m_nReadCount = 1;
 		m_pNetServer->OnMsg( pConnect->m_host );//无返回值，避免框架逻辑依赖于客户实现
-		if ( !pConnect->m_bConnect ) break;
 		if ( pConnect->IsReadAble() ) continue;
 		if ( 1 == AtomDec(&pConnect->m_nReadCount,1) ) break;//避免漏接收
 	}
