@@ -33,7 +33,6 @@ NetEngine::NetEngine()
 	m_stop = true;//停止标志
 	m_startError = "";
 	m_nHeartTime = 0;//心跳间隔(S)，默认不检查
-	m_nReconnectTime = 0;//默认不自动重连
 	m_pNetMonitor = NULL;
 	m_ioThreadCount = 16;//网络io线程数量
 	m_workThreadCount = 16;//工作线程数量
@@ -62,12 +61,6 @@ void NetEngine::SetAverageConnectCount(int count)
 void NetEngine::SetHeartTime( int nSecond )
 {
 	m_nHeartTime = nSecond;
-}
-
-//设置自动重连时间,小于等于0表示不自动重连
-void NetEngine::SetReconnectTime( int nSecond )
-{
-	m_nReconnectTime = nSecond;
 }
 
 //设置网络IO线程数量
@@ -128,6 +121,7 @@ bool NetEngine::Start()
 		return false;
 	}
 	ConnectAll();
+	m_connectThread.Run( Executor::Bind(&NetEngine::ConnectThread), this, 0 );
 	return m_mainThread.Run( Executor::Bind(&NetEngine::Main), this, 0 );
 }
 
@@ -161,7 +155,7 @@ void* NetEngine::Main(void*)
 	{
 		if ( m_sigStop.Wait( 10000 ) ) break;
 		HeartMonitor();
-		ReConnectAll();
+		ConnectAll();
 	}
 	return NULL;
 }
@@ -198,16 +192,6 @@ void NetEngine::HeartMonitor()
 		it = m_connectList.begin();
 	}
 	lock.Unlock();
-}
-
-void NetEngine::ReConnectAll()
-{
-	if ( 0 >= m_nReconnectTime ) return;//无重连机制
-	static time_t lastConnect = time(NULL);
-	time_t curTime = time(NULL);
-	if ( m_nReconnectTime > curTime - lastConnect ) return;
-	lastConnect = curTime;
-	ConnectAll();
 }
 
 //关闭一个连接
@@ -581,77 +565,132 @@ bool NetEngine::ListenAll()
 	return ret;
 }
 
-bool NetEngine::Connect(const char* ip, int port)
+bool NetEngine::Connect(const char* ip, int port, int reConnectTime)
 {
 	uint64 addr64 = 0;
 	if ( !addrToI64(addr64, ip, port) ) return false;
-
+	
 	AutoLock lock(&m_serListMutex);
-	pair<map<uint64,SOCKET>::iterator,bool> ret 
-		= m_serIPList.insert(map<uint64,SOCKET>::value_type(addr64,INVALID_SOCKET));
-	map<uint64,SOCKET>::iterator it = ret.first;
-	if ( !ret.second && INVALID_SOCKET != it->second ) return true;
-	if ( m_stop ) return true;
-
-	it->second = ConnectOtherServer(ip, port);
-	if ( INVALID_SOCKET == it->second ) return false;
-	lock.Unlock();
-
-	if ( !OnConnect(it->second, true) )	it->second = INVALID_SOCKET;
+	
+	vector<SVR_CONNECT*> sockArray;
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.find(addr64);
+	if ( it == m_keepIPList.end() ) m_keepIPList.insert( map<uint64,vector<SVR_CONNECT*> >::value_type(addr64,sockArray) );
+	SVR_CONNECT *pSvr = new SVR_CONNECT;
+	pSvr->reConnectSecond = reConnectTime;
+	pSvr->lastConnect = 0;
+	pSvr->sock = INVALID_SOCKET;
+	pSvr->addr = addr64;
+	pSvr->state = SVR_CONNECT::unconnected;
+	m_keepIPList[addr64].push_back(pSvr);
+	if ( m_stop ) return false;
+	
+	//保存链接结果
+	pSvr->lastConnect = time(NULL);
+	if ( ConnectOtherServer(ip, port, pSvr->sock) )
+	{
+		pSvr->state = SVR_CONNECT::connected;
+		OnConnect(pSvr->sock, true);
+	}
+	else
+	{
+		pSvr->state = SVR_CONNECT::connectting;
+		m_wakeConnectThread.Notify();
+	}
 	
 	return true;
 }
 
-SOCKET NetEngine::ConnectOtherServer(const char* ip, int port)
+bool NetEngine::ConnectOtherServer(const char* ip, int port, SOCKET &svrSock)
 {
+	svrSock = INVALID_SOCKET;
 	Socket sock;//监听socket
-	if ( !sock.Init( Socket::tcp ) ) return INVALID_SOCKET;
-	if ( !sock.Connect(ip, port) ) 
-	{
-		sock.Close();
-		return INVALID_SOCKET;
-	}
-	Socket::InitForIOCP(sock.GetSocket());
-	
-	return sock.Detach();
+	if ( !sock.Init( Socket::tcp ) ) return false;
+	sock.SetSockMode();
+	svrSock = sock.Detach();
+	bool successed = AsycConnect(svrSock, ip, port);
+	return successed;
 }
 
 bool NetEngine::ConnectAll()
 {
 	if ( m_stop ) return false;
-	bool ret = true;
 	AutoLock lock(&m_serListMutex);
-	map<uint64,SOCKET>::iterator it = m_serIPList.begin();
+	time_t curTime = time(NULL);
 	char ip[24];
 	int port;
-	for ( ; it != m_serIPList.end(); it++ )
+	int i = 0;
+	int count = 0;
+	SOCKET sock = INVALID_SOCKET;
+	
+	//重链尝试
+	SVR_CONNECT *pSvr = NULL;
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+	vector<SVR_CONNECT*>::iterator itSvr;
+	for ( ; it != m_keepIPList.end(); it++ )
 	{
-		if ( INVALID_SOCKET != it->second ) continue;
 		i64ToAddr(ip, port, it->first);
-		it->second = ConnectOtherServer(ip, port);
-		if ( INVALID_SOCKET == it->second ) 
+		itSvr = it->second.begin();
+		for ( ; itSvr != it->second.end();  )
 		{
-			ret = false;
-			continue;
+			pSvr = *itSvr;
+			if ( SVR_CONNECT::connectting == pSvr->state 
+				|| SVR_CONNECT::connected == pSvr->state 
+				|| SVR_CONNECT::unconnectting == pSvr->state 
+				) 
+			{
+				itSvr++;
+				continue;
+			}
+			if ( 0 > pSvr->reConnectSecond && 0 != pSvr->lastConnect ) 
+			{
+				itSvr = it->second.erase(itSvr);
+				delete pSvr;
+				continue;
+			}
+			if ( curTime - pSvr->lastConnect < pSvr->reConnectSecond ) 
+			{
+				itSvr++;
+				continue;
+			}
+			
+			pSvr->lastConnect = curTime;
+			if ( ConnectOtherServer(ip, port, pSvr->sock) )
+			{
+				pSvr->state = SVR_CONNECT::connected;
+				OnConnect(pSvr->sock, true);
+			}
+			else 
+			{
+				pSvr->state = SVR_CONNECT::connectting;
+				m_wakeConnectThread.Notify();
+			}
+			itSvr++;
 		}
-		if ( !OnConnect(it->second, true) )	it->second = INVALID_SOCKET;
 	}
-
-	return ret;
+	
+	return true;
 }
 
 void NetEngine::SetServerClose(NetConnect *pConnect)
 {
 	if ( !pConnect->m_host.IsServer() ) return;
-	
 	SOCKET sock = pConnect->GetID();
 	AutoLock lock(&m_serListMutex);
-	map<uint64,SOCKET>::iterator it = m_serIPList.begin();
-	for ( ; it != m_serIPList.end(); it++ )
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+	int i = 0;
+	int count = 0;
+	SVR_CONNECT *pSvr = NULL;
+	for ( ; it != m_keepIPList.end(); it++ )
 	{
-		if ( sock != it->second ) continue;
-		it->second = INVALID_SOCKET;
-		break;
+		count = it->second.size();
+		for ( i = 0; i < count; i++ )
+		{
+			pSvr = it->second[i];
+			if ( sock != pSvr->sock ) continue;
+			pSvr->sock = INVALID_SOCKET;
+			pSvr->state = SVR_CONNECT::unconnected;
+			return;
+		}
 	}
 }
 
@@ -665,7 +704,7 @@ void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsig
 	vector<NetConnect*> recverList;
 	//加锁将所有广播接收连接复制到一个队列中
 	AutoLock lock( &m_connectsMutex );
-	for ( it = m_connectList.begin(); m_nHeartTime > 0 && it != m_connectList.end(); it++ )
+	for ( it = m_connectList.begin(); it != m_connectList.end(); it++ )
 	{
 		pConnect = it->second;
 		if ( !pConnect->IsInGroups(recvGroupIDs, recvCount) 
@@ -703,6 +742,157 @@ void NetEngine::SendMsg( int hostID, char *msg, unsigned int msgsize )
 const char* NetEngine::GetInitError()//取得启动错误信息
 {
 	return m_startError.c_str();
+}
+
+void* NetEngine::ConnectThread(void*)
+{
+	fd_set readfds; 
+	fd_set sendfds; 
+	std::vector<SVR_CONNECT*> clientList;
+	int clientCount;
+	int startPos = 0;
+	int endPos = 0;
+	int i = 0;
+	SOCKET maxSocket = 0;
+	bool wait = false;
+	sockaddr_in sockAddr;
+	char ip[32];
+	int port;
+	SVR_CONNECT *pSvr = NULL;
+
+	while ( !m_stop )
+	{
+		//复制所有connectting状态的sock到监听列表
+		clientList.clear();
+		{
+			AutoLock lock(&m_serListMutex);
+			vector<SVR_CONNECT*> sockArray;
+			map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+			for ( ; it != m_keepIPList.end(); it++ )
+			{
+				for ( i = 0; i < it->second.size(); i++ )
+				{
+					pSvr = it->second[i];
+					if ( SVR_CONNECT::connectting != pSvr->state ) continue;
+					clientList.push_back(pSvr);
+				}
+			}
+		}
+
+		//开始监听，每次监听1000个sock,select1次最大监听1024个
+		clientCount = clientList.size();
+		wait = true;
+		SOCKET svrSock;
+		for ( endPos = 0; endPos < clientCount; )
+		{
+			maxSocket = 0;
+			FD_ZERO(&readfds);     
+		 	FD_ZERO(&sendfds);  
+			startPos = endPos;//记录本次监听sock开始位置
+			for ( i = 0; i < FD_SETSIZE - 1 && endPos < clientCount; i++ )
+			{
+				pSvr = clientList[endPos];
+				if ( maxSocket < pSvr->sock ) maxSocket = pSvr->sock;
+				i64ToAddr(ip, port, pSvr->addr);
+				FD_SET(pSvr->sock, &readfds); 
+				FD_SET(pSvr->sock, &sendfds); 
+				endPos++;
+			}
+
+			//超时设置
+			timeval outtime;
+			outtime.tv_sec = 20;
+			outtime.tv_usec = 0;
+			int nSelectRet;
+			nSelectRet=::select( maxSocket + 1, &readfds, &sendfds, NULL, &outtime ); //检查读写状态
+			if ( SOCKET_ERROR == nSelectRet ) 
+			{
+				wait = false;
+				continue;
+			}
+
+			int readSize = 0;
+			bool successed = true;
+			for ( i = startPos; i < endPos; i++ )
+			{
+				pSvr = clientList[i];
+				svrSock = pSvr->sock;
+				i64ToAddr(ip, port, pSvr->addr);
+				if ( 0 != nSelectRet && !FD_ISSET(svrSock, &readfds) && !FD_ISSET(svrSock, &sendfds) ) //有sock尚未返回，遍历结束后不等待，继续监听未返回的sock
+				{
+					wait = false;
+					continue;
+				}
+				successed = true;
+				memset(&sockAddr, 0, sizeof(sockAddr));
+				socklen_t nSockAddrLen = sizeof(sockAddr);
+				int gpn = getpeername( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen );
+				if ( SOCKET_ERROR == gpn ) successed = false;
+
+				if ( !successed )
+				{
+					pSvr->state = SVR_CONNECT::unconnectting;
+					m_workThreads.Accept( Executor::Bind(&NetEngine::ConnectFailed), this, pSvr );
+					continue;
+				}
+				pSvr->state = SVR_CONNECT::connected;
+				OnConnect(svrSock, true);
+			}
+		}
+		if ( wait ) m_wakeConnectThread.Wait();
+	}
+
+	return NULL;
+}
+
+#ifndef WIN32
+#include <netdb.h>
+#endif
+
+bool NetEngine::AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort )
+{
+	if ( NULL == lpszHostAddress ) return false;
+	//将域名转换为真实IP，如果lpszHostAddress本来就是ip，不影响转换结果
+	char ip[64]; //真实IP
+#ifdef WIN32
+	PHOSTENT hostinfo;   
+#else
+	struct hostent * hostinfo;   
+#endif
+	strcpy( ip, lpszHostAddress ); 
+	if((hostinfo = gethostbyname(lpszHostAddress)) != NULL)   
+	{
+		strcpy( ip, inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list) ); 
+	}
+
+	//使用真实ip进行连接
+	sockaddr_in sockAddr;
+	memset(&sockAddr,0,sizeof(sockAddr));
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = inet_addr(ip);
+	sockAddr.sin_port = htons( nHostPort );
+
+	if ( SOCKET_ERROR != connect(svrSock, (sockaddr*)&sockAddr, sizeof(sockAddr)) ) return true;
+
+	return false;
+}
+
+void* NetEngine::ConnectFailed( NetEngine::SVR_CONNECT *pSvr )
+{
+	if ( NULL == pSvr ) return NULL;
+	char ip[32];
+	int port;
+	int reConnectSecond;
+	i64ToAddr(ip, port, pSvr->addr);
+	reConnectSecond = pSvr->reConnectSecond;
+	SOCKET svrSock = pSvr->sock;
+	pSvr->sock = INVALID_SOCKET;
+	pSvr->state = SVR_CONNECT::unconnected;
+	closesocket(svrSock);
+
+	m_pNetServer->OnConnectFailed( ip, port, reConnectSecond );
+
+	return NULL;
 }
 
 }

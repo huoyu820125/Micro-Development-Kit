@@ -55,6 +55,11 @@ public:
 			用于数据io和一些其它主机操作，具体参考NetHost类
 	 */
 	virtual void OnConnect(NetHost &host){}
+	/*
+	响应链接到地址失败的情况。
+	reConnectSecond是调用Connect()时候的传入最后一个参数，表示底层在多长时间后会自动尝试再次链接这个地址，小于0表示不会尝试
+	*/	
+	virtual void OnConnectFailed( char *ip, int port, int reConnectTime ){}
 	/**
 		有连接断开，业务处理回调方法
 		参数：
@@ -98,9 +103,6 @@ public:
 
 	//设置单个服务器进程可能承载的平均连接数，默认5000
 	void SetAverageConnectCount(int count);
-	//设置自动重连时间,最小10s，不设置则，或设置小于等于0，服务器不重连
-	//使用Connect()方法连接的地址断开时，系统会定时尝试重新连接
-	void SetReconnectTime( int nSecond );
 	//设置心跳时间,最小10s，不设置则，或设置小于等于0，服务器不检查心跳
 	void SetHeartTime( int nSecond );
 	//设置网络IO线程数量，建设设置为CPU数量的1~2倍
@@ -109,9 +111,11 @@ public:
 	void SetWorkThreadCount(int nCount);
 	//监听某个端口，可多次调用监听多个端口
 	bool Listen(int port);
-	//连接外部服务器，可多次调用连接多个外部服务器
+	//异步连接外部服务器，可多次调用连接多个外部服务器
+	//可对同一个ip端口，调用多次，产生多个链接
+	//reConnectTime 此链接断开后，自动重连的等待时间，最小10s，不传递或传递小于等于0，则断开后不重连
 	//※不要连接自身，服务器未做此测试，可能出现bug
-	bool Connect(const char *ip, int port);
+	bool Connect(const char *ip, int port, int reConnectTime = -1);
 	/*
 		广播消息
 		向属于recvGroupIDs中任意一组，同时过滤掉属于filterGroupIDs中任意一组的主机，发送消息
