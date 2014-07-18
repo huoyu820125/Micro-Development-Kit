@@ -34,7 +34,6 @@ STNetEngine::STNetEngine()
 	m_stop = true;//停止标志
 	m_startError = "";
 	m_nHeartTime = 0;//心跳间隔(S)，默认不检查
-	m_nReconnectTime = 0;//默认不自动重连
 #ifdef WIN32
 	m_pNetMonitor = new STIocp;
 #else
@@ -65,12 +64,6 @@ void STNetEngine::SetAverageConnectCount(int count)
 void STNetEngine::SetHeartTime( int nSecond )
 {
 	m_nHeartTime = nSecond;
-}
-
-//设置自动重连时间,小于等于0表示不自动重连
-void STNetEngine::SetReconnectTime( int nSecond )
-{
-	m_nReconnectTime = nSecond;
 }
 
 /**
@@ -248,18 +241,24 @@ void* STNetEngine::Main(void*)
 	time_t lastConnect = time(NULL);
 	time_t curTime = time(NULL);
 	
+	bool mainFinished = false;
 	while ( !m_stop ) 
 	{
+		if ( !mainFinished )
+		{
+			if ( 0== m_pNetServer->Main() ) mainFinished = true;
+		}
 #ifdef WIN32
 		if ( !WINIO( 10000 ) ) break;
 #else
 		if ( !LinuxIO( 10000 ) ) break;
 #endif
+		Select();
 		curTime = time(NULL);
 		if ( 10000 <= curTime - lastConnect ) continue;
 		lastConnect = curTime;
 		HeartMonitor();
-		ReConnectAll();
+		ConnectAll();
 	}
 	return NULL;
 }
@@ -279,7 +278,6 @@ void STNetEngine::HeartMonitor()
 	 */
 	tCurTime = time( NULL );
 	time_t tLastHeart;
-	AutoLock lock( &m_connectsMutex );
 	for ( it = m_connectList.begin(); it != m_connectList.end(); )//心跳时间<=0无心跳机制,或遍历完成
 	{
 		pConnect = it->second;
@@ -299,17 +297,6 @@ void STNetEngine::HeartMonitor()
 		CloseConnect( it );
 		it = m_connectList.begin();
 	}
-	lock.Unlock();
-}
-
-void STNetEngine::ReConnectAll()
-{
-	if ( 0 >= m_nReconnectTime ) return;//无重连机制
-	static time_t lastConnect = time(NULL);
-	time_t curTime = time(NULL);
-	if ( m_nReconnectTime > curTime - lastConnect ) return;
-	lastConnect = curTime;
-	ConnectAll();
 }
 
 //关闭一个连接
@@ -352,9 +339,7 @@ bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 	//加入管理列表
 	pConnect->RefreshHeart();
 	AtomAdd(&pConnect->m_useCount, 1);//被m_connectList访问
-	AutoLock lock( &m_connectsMutex );
 	pair<ConnectList::iterator, bool> ret = m_connectList.insert( ConnectList::value_type(pConnect->GetSocket()->GetSocket(),pConnect) );
-	lock.Unlock();
 	//执行业务
 	STNetHost accessHost = pConnect->m_host;//被引擎访问，局部变量离开时，析构函数自动释放访问
 	m_pNetServer->OnConnect( pConnect->m_host );
@@ -380,7 +365,6 @@ bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 
 void STNetEngine::OnClose( SOCKET sock )
 {
-	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
 	if ( itNetConnect == m_connectList.end() )return;//底层已经主动断开
 	CloseConnect( itNetConnect );
@@ -389,26 +373,21 @@ void STNetEngine::OnClose( SOCKET sock )
 connectState STNetEngine::OnData( SOCKET sock, char *pData, unsigned short uSize )
 {
 	connectState cs = unconnect;
-	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);//client列表里查找
 	if ( itNetConnect == m_connectList.end() ) return cs;//底层已经断开
 	STNetConnect *pConnect = itNetConnect->second;
 	STNetHost accessHost = pConnect->m_host;//被引擎访问，局部变量离开时，析构函数自动释放访问
-	lock.Unlock();
 
 	pConnect->RefreshHeart();
-	try
+	cs = RecvData( pConnect, pData, uSize );
+	if ( unconnect == cs )
 	{
-		cs = RecvData( pConnect, pData, uSize );
-		if ( unconnect == cs )
-		{
-			OnClose( sock );
-			return cs;
-		}
-		if ( 0 != AtomAdd(&pConnect->m_nReadCount, 1) ) return cs;
-		//执行业务STNetServer::OnMsg();
-		MsgWorker(pConnect);
-	}catch( ... ){}
+		OnClose( sock );
+		return cs;
+	}
+	if ( 0 != AtomAdd(&pConnect->m_nReadCount, 1) ) return cs;
+	//执行业务STNetServer::OnMsg();
+	MsgWorker(pConnect);
 	return cs;
 }
 
@@ -460,7 +439,6 @@ connectState STNetEngine::RecvData( STNetConnect *pConnect, char *pData, unsigne
 //关闭一个连接
 void STNetEngine::CloseConnect( SOCKET sock )
 {
-	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find( sock );
 	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
 	CloseConnect( itNetConnect );
@@ -470,128 +448,108 @@ void STNetEngine::CloseConnect( SOCKET sock )
 connectState STNetEngine::OnSend( SOCKET sock, unsigned short uSize )
 {
 	connectState cs = unconnect;
-	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
 	if ( itNetConnect == m_connectList.end() )return cs;//底层已经主动断开
 	STNetConnect *pConnect = itNetConnect->second;
 	STNetHost accessHost = pConnect->m_host;//被引擎访问，局部变量离开时，析构函数自动释放访问
-	lock.Unlock();
-	try
-	{
-		if ( pConnect->m_bConnect ) cs = SendData(pConnect, uSize);
-	}
-	catch(...)
-	{
-	}
+	if ( pConnect->m_bConnect ) cs = SendData(pConnect, uSize);
+
 	return cs;
-	
 }
 
 connectState STNetEngine::SendData(STNetConnect *pConnect, unsigned short uSize)
 {
 #ifdef WIN32
-	try
+	unsigned char buf[BUFBLOCK_SIZE];
+	if ( uSize > 0 ) pConnect->m_sendBuffer.ReadData(buf, uSize);
+	int nLength = pConnect->m_sendBuffer.GetLength();
+	if ( 0 >= nLength ) 
 	{
-		unsigned char buf[BUFBLOCK_SIZE];
-		if ( uSize > 0 ) pConnect->m_sendBuffer.ReadData(buf, uSize);
-		int nLength = pConnect->m_sendBuffer.GetLength();
+		pConnect->SendEnd();//发送结束
+		nLength = pConnect->m_sendBuffer.GetLength();//第二次检查发送缓冲
 		if ( 0 >= nLength ) 
 		{
-			pConnect->SendEnd();//发送结束
-			nLength = pConnect->m_sendBuffer.GetLength();//第二次检查发送缓冲
-			if ( 0 >= nLength ) 
-			{
-				/*
-					情况1：外部发送线程未完成发送缓冲写入
-						外部线程完成写入时，不存在发送流程，单线程SendStart()必定成功
-						结论：不会漏发送
-					其它情况：不存在其它情况
-				*/
-				return ok;//没有待发送数据，退出发送线程
-			}
-			/*
-				外部发送线程已完成发送缓冲写入
-				多线程并发SendStart()，只有一个成功
-				结论：不会出现并发发送，也不会漏数据
+		/*
+		情况1：外部发送线程未完成发送缓冲写入
+		外部线程完成写入时，不存在发送流程，单线程SendStart()必定成功
+		结论：不会漏发送
+		其它情况：不存在其它情况
 			*/
-			if ( !pConnect->SendStart() ) return ok;//已经在发送
-			//发送流程开始
+			return ok;//没有待发送数据，退出发送线程
 		}
-
-		if ( nLength > BUFBLOCK_SIZE )
-		{
-			pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
-			m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, BUFBLOCK_SIZE );
-		}
-		else
-		{
-			pConnect->m_sendBuffer.ReadData(buf, nLength, false);
-			m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, nLength );
-		}
+		/*
+		外部发送线程已完成发送缓冲写入
+		多线程并发SendStart()，只有一个成功
+		结论：不会出现并发发送，也不会漏数据
+		*/
+		if ( !pConnect->SendStart() ) return ok;//已经在发送
+		//发送流程开始
 	}
-	catch(...)
+	
+	if ( nLength > BUFBLOCK_SIZE )
 	{
+		pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
+		m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, BUFBLOCK_SIZE );
+	}
+	else
+	{
+		pConnect->m_sendBuffer.ReadData(buf, nLength, false);
+		m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, nLength );
 	}
 	return ok;
 #else
-	try
+	connectState cs = wait_send;//默认为等待状态
+	//////////////////////////////////////////////////////////////////////////
+	//执行发送
+	unsigned char buf[BUFBLOCK_SIZE];
+	int nSize = 0;
+	int nSendSize = 0;
+	int nFinishedSize = 0;
+	nSendSize = pConnect->m_sendBuffer.GetLength();
+	if ( 0 < nSendSize )
 	{
-		connectState cs = wait_send;//默认为等待状态
-		//////////////////////////////////////////////////////////////////////////
-		//执行发送
-		unsigned char buf[BUFBLOCK_SIZE];
-		int nSize = 0;
-		int nSendSize = 0;
-		int nFinishedSize = 0;
-		nSendSize = pConnect->m_sendBuffer.GetLength();
-		if ( 0 < nSendSize )
+		nSize = 0;
+		//一次发送4096byte
+		if ( BUFBLOCK_SIZE < nSendSize )//1次发不完，设置为就绪状态
 		{
-			nSize = 0;
-			//一次发送4096byte
-			if ( BUFBLOCK_SIZE < nSendSize )//1次发不完，设置为就绪状态
+			pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
+			nSize += BUFBLOCK_SIZE;
+			nSendSize -= BUFBLOCK_SIZE;
+			cs = ok;
+		}
+		else//1次可发完，设置为等待状态
+		{
+			pConnect->m_sendBuffer.ReadData(buf, nSendSize, false);
+			nSize += nSendSize;
+			nSendSize = 0;
+			cs = wait_send;
+		}
+		nFinishedSize = pConnect->GetSocket()->Send((char*)buf, nSize);//发送
+		if ( -1 == nFinishedSize ) cs = unconnect;
+		else
+		{
+			pConnect->m_sendBuffer.ReadData(buf, nFinishedSize);//将发送成功的数据从缓冲清除
+			if ( nFinishedSize < nSize ) //sock已写满，设置为等待状态
 			{
-				pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
-				nSize += BUFBLOCK_SIZE;
-				nSendSize -= BUFBLOCK_SIZE;
-				cs = ok;
-			}
-			else//1次可发完，设置为等待状态
-			{
-				pConnect->m_sendBuffer.ReadData(buf, nSendSize, false);
-				nSize += nSendSize;
-				nSendSize = 0;
 				cs = wait_send;
 			}
-			nFinishedSize = pConnect->GetSocket()->Send((char*)buf, nSize);//发送
-			if ( -1 == nFinishedSize ) cs = unconnect;
-			else
-			{
-				pConnect->m_sendBuffer.ReadData(buf, nFinishedSize);//将发送成功的数据从缓冲清除
-				if ( nFinishedSize < nSize ) //sock已写满，设置为等待状态
-				{
-					cs = wait_send;
-				}
-			}
-
 		}
-		if ( ok == cs || unconnect == cs ) return cs;//就绪状态或连接关闭直接返回，连接关闭不必结束发送流程，pNetConnect对象会被释放，发送流程自动结束
-
-		//等待状态，结束本次发送，并启动新发送流程
-		pConnect->SendEnd();//发送结束
-		//////////////////////////////////////////////////////////////////////////
-		//检查是否需要开始新的发送流程
-		if ( 0 >= pConnect->m_sendBuffer.GetLength() ) return cs;
-		/*
-			外部发送线程已完成发送缓冲写入
-			多线程并发SendStart()，只有一个成功
-			结论：不会出现并发发送，也不会漏数据
-		*/
-		if ( !pConnect->SendStart() ) return cs;//已经在发送
-		return cs;
+		
 	}
-	catch(...)
-	{
-	}
+	if ( ok == cs || unconnect == cs ) return cs;//就绪状态或连接关闭直接返回，连接关闭不必结束发送流程，pNetConnect对象会被释放，发送流程自动结束
+	
+	//等待状态，结束本次发送，并启动新发送流程
+	pConnect->SendEnd();//发送结束
+	//////////////////////////////////////////////////////////////////////////
+	//检查是否需要开始新的发送流程
+	if ( 0 >= pConnect->m_sendBuffer.GetLength() ) return cs;
+	/*
+	外部发送线程已完成发送缓冲写入
+	多线程并发SendStart()，只有一个成功
+	结论：不会出现并发发送，也不会漏数据
+	*/
+	if ( !pConnect->SendStart() ) return cs;//已经在发送
+	return cs;
 #endif
 	return ok;
 }
@@ -657,88 +615,138 @@ bool STNetEngine::ListenAll()
 }
 
 
-bool STNetEngine::Connect(const char* ip, int port)
+bool STNetEngine::Connect(const char* ip, int port, int reConnectTime)
 {
 	uint64 addr64 = 0;
 	if ( !addrToI64(addr64, ip, port) ) return false;
-
-	pair<map<uint64,SOCKET>::iterator,bool> ret 
-		= m_serIPList.insert(map<uint64,SOCKET>::value_type(addr64,INVALID_SOCKET));
-	map<uint64,SOCKET>::iterator it = ret.first;
-	if ( !ret.second && INVALID_SOCKET != it->second ) return true;
-	if ( m_stop ) return true;
-
-	it->second = ConnectOtherServer(ip, port);
-	if ( INVALID_SOCKET == it->second ) return false;
-
-	if ( !OnConnect(it->second, true) )	it->second = INVALID_SOCKET;
+	
+	vector<SVR_CONNECT*> sockArray;
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.find(addr64);
+	if ( it == m_keepIPList.end() ) m_keepIPList.insert( map<uint64,vector<SVR_CONNECT*> >::value_type(addr64,sockArray) );
+	SVR_CONNECT *pSvr = new SVR_CONNECT;
+	pSvr->reConnectSecond = reConnectTime;
+	pSvr->lastConnect = 0;
+	pSvr->sock = INVALID_SOCKET;
+	pSvr->addr = addr64;
+	pSvr->state = SVR_CONNECT::unconnected;
+	m_keepIPList[addr64].push_back(pSvr);
+	if ( m_stop ) return false;
+	
+	//保存链接结果
+	pSvr->lastConnect = time(NULL);
+	if ( ConnectOtherServer(ip, port, pSvr->sock) )
+	{
+		pSvr->state = SVR_CONNECT::connected;
+		OnConnect(pSvr->sock, true);
+	}
+	else
+	{
+		pSvr->state = SVR_CONNECT::connectting;
+	}
 	
 	return true;
 }
 
-SOCKET STNetEngine::ConnectOtherServer(const char* ip, int port)
+bool STNetEngine::ConnectOtherServer(const char* ip, int port, SOCKET &svrSock)
 {
+	svrSock = INVALID_SOCKET;
 	Socket sock;//监听socket
-	if ( !sock.Init( Socket::tcp ) ) return INVALID_SOCKET;
-	if ( !sock.Connect(ip, port) ) 
-	{
-		sock.Close();
-		return INVALID_SOCKET;
-	}
-	Socket::InitForIOCP(sock.GetSocket());
-	
-	return sock.Detach();
+	if ( !sock.Init( Socket::tcp ) ) return false;
+	sock.SetSockMode();
+	svrSock = sock.Detach();
+	bool successed = AsycConnect(svrSock, ip, port);
+	return successed;
 }
 
 bool STNetEngine::ConnectAll()
 {
 	if ( m_stop ) return false;
-	bool ret = true;
-	map<uint64,SOCKET>::iterator it = m_serIPList.begin();
+	time_t curTime = time(NULL);
 	char ip[24];
 	int port;
-	for ( ; it != m_serIPList.end(); it++ )
+	int i = 0;
+	int count = 0;
+	SOCKET sock = INVALID_SOCKET;
+	
+	//重链尝试
+	SVR_CONNECT *pSvr = NULL;
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+	vector<SVR_CONNECT*>::iterator itSvr;
+	for ( ; it != m_keepIPList.end(); it++ )
 	{
-		if ( INVALID_SOCKET != it->second ) continue;
 		i64ToAddr(ip, port, it->first);
-		it->second = ConnectOtherServer(ip, port);
-		if ( INVALID_SOCKET == it->second ) 
+		itSvr = it->second.begin();
+		for ( ; itSvr != it->second.end();  )
 		{
-			ret = false;
-			continue;
+			pSvr = *itSvr;
+			if ( SVR_CONNECT::connectting == pSvr->state 
+				|| SVR_CONNECT::connected == pSvr->state 
+				|| SVR_CONNECT::unconnectting == pSvr->state 
+				) 
+			{
+				itSvr++;
+				continue;
+			}
+			if ( 0 > pSvr->reConnectSecond && 0 != pSvr->lastConnect ) 
+			{
+				itSvr = it->second.erase(itSvr);
+				delete pSvr;
+				continue;
+			}
+			if ( curTime - pSvr->lastConnect < pSvr->reConnectSecond ) 
+			{
+				itSvr++;
+				continue;
+			}
+			
+			pSvr->lastConnect = curTime;
+			if ( ConnectOtherServer(ip, port, pSvr->sock) )
+			{
+				pSvr->state = SVR_CONNECT::connected;
+				OnConnect(pSvr->sock, true);
+			}
+			else 
+			{
+				pSvr->state = SVR_CONNECT::connectting;
+			}
+			itSvr++;
 		}
-		if ( !OnConnect(it->second, true) )	it->second = INVALID_SOCKET;
 	}
 	
-	return ret;
+	return true;
 }
 
 void STNetEngine::SetServerClose(STNetConnect *pConnect)
 {
 	if ( !pConnect->m_host.IsServer() ) return;
-	
 	SOCKET sock = pConnect->GetID();
-	map<uint64,SOCKET>::iterator it = m_serIPList.begin();
-	for ( ; it != m_serIPList.end(); it++ )
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+	int i = 0;
+	int count = 0;
+	SVR_CONNECT *pSvr = NULL;
+	for ( ; it != m_keepIPList.end(); it++ )
 	{
-		if ( sock != it->second ) continue;
-		it->second = INVALID_SOCKET;
-		break;
+		count = it->second.size();
+		for ( i = 0; i < count; i++ )
+		{
+			pSvr = it->second[i];
+			if ( sock != pSvr->sock ) continue;
+			pSvr->sock = INVALID_SOCKET;
+			pSvr->state = SVR_CONNECT::unconnected;
+			return;
+		}
 	}
 }
 
 //向某组连接广播消息(业务层接口)
 void STNetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount )
 {
-	//////////////////////////////////////////////////////////////////////////
-	//关闭无心跳的连接
 	ConnectList::iterator it;
 	STNetConnect *pConnect;
 	vector<STNetConnect*> recverList;
 	STNetHost accessHost;
 	//加锁将所有广播接收连接复制到一个队列中
-	AutoLock lock( &m_connectsMutex );
-	for ( it = m_connectList.begin(); m_nHeartTime > 0 && it != m_connectList.end(); it++ )
+	for ( it = m_connectList.begin(); it != m_connectList.end(); it++ )
 	{
 		pConnect = it->second;
 		if ( !pConnect->IsInGroups(recvGroupIDs, recvCount) 
@@ -746,7 +754,6 @@ void STNetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, uns
 		recverList.push_back(pConnect);
 		accessHost = pConnect->m_host;//被用户访问，局部变量离开时，析构函数自动释放访问
 	}
-	lock.Unlock();
 	
 	//向队列中的连接开始广播
 	vector<STNetConnect*>::iterator itv = recverList.begin();
@@ -760,12 +767,11 @@ void STNetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, uns
 //向某主机发送消息(业务层接口)
 void STNetEngine::SendMsg( int hostID, char *msg, unsigned int msgsize )
 {
-	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(hostID);
 	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
 	STNetConnect *pConnect = itNetConnect->second;
 	STNetHost accessHost = pConnect->m_host;//被用户访问，局部变量离开时，析构函数自动释放访问
-	lock.Unlock();
+
 	if ( pConnect->m_bConnect ) pConnect->SendData((const unsigned char*)msg,msgsize);
 
 	return;
@@ -774,6 +780,145 @@ void STNetEngine::SendMsg( int hostID, char *msg, unsigned int msgsize )
 const char* STNetEngine::GetInitError()//取得启动错误信息
 {
 	return m_startError.c_str();
+}
+
+void STNetEngine::Select()
+{
+	fd_set readfds; 
+	fd_set sendfds; 
+	std::vector<SVR_CONNECT*> clientList;
+	int clientCount;
+	int startPos = 0;
+	int endPos = 0;
+	int i = 0;
+	SOCKET maxSocket = 0;
+	sockaddr_in sockAddr;
+	char ip[32];
+	int port;
+	SVR_CONNECT *pSvr = NULL;
+	
+	//复制所有connectting状态的sock到监听列表
+	clientList.clear();
+	{
+		vector<SVR_CONNECT*> sockArray;
+		map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+		for ( ; it != m_keepIPList.end(); it++ )
+		{
+			for ( i = 0; i < it->second.size(); i++ )
+			{
+				pSvr = it->second[i];
+				if ( SVR_CONNECT::connectting != pSvr->state ) continue;
+				clientList.push_back(pSvr);
+			}
+		}
+	}
+	
+	//开始监听，每次监听1000个sock,select1次最大监听1024个
+	clientCount = clientList.size();
+	SOCKET svrSock;
+	for ( endPos = 0; endPos < clientCount; )
+	{
+		maxSocket = 0;
+		FD_ZERO(&readfds);     
+		FD_ZERO(&sendfds);  
+		startPos = endPos;//记录本次监听sock开始位置
+		for ( i = 0; i < FD_SETSIZE - 1 && endPos < clientCount; i++ )
+		{
+			pSvr = clientList[endPos];
+			if ( maxSocket < pSvr->sock ) maxSocket = pSvr->sock;
+			i64ToAddr(ip, port, pSvr->addr);
+			FD_SET(pSvr->sock, &readfds); 
+			FD_SET(pSvr->sock, &sendfds); 
+			endPos++;
+		}
+		
+		//超时设置
+		timeval outtime;
+		outtime.tv_sec = 0;
+		outtime.tv_usec = 0;
+		int nSelectRet;
+		nSelectRet=::select( maxSocket + 1, &readfds, &sendfds, NULL, &outtime ); //检查读写状态
+		if ( SOCKET_ERROR == nSelectRet ) continue;
+		
+		int readSize = 0;
+		bool successed = true;
+		for ( i = startPos; i < endPos; i++ )
+		{
+			pSvr = clientList[i];
+			svrSock = pSvr->sock;
+			i64ToAddr(ip, port, pSvr->addr);
+			if ( 0 != nSelectRet && !FD_ISSET(svrSock, &readfds) && !FD_ISSET(svrSock, &sendfds) ) continue;
+
+			successed = true;
+			memset(&sockAddr, 0, sizeof(sockAddr));
+			socklen_t nSockAddrLen = sizeof(sockAddr);
+			int gpn = getpeername( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen );
+			if ( SOCKET_ERROR == gpn ) successed = false;
+			
+			if ( !successed )
+			{
+				pSvr->state = SVR_CONNECT::unconnectting;
+				ConnectFailed( pSvr );
+			}
+			else
+			{
+				pSvr->state = SVR_CONNECT::connected;
+				OnConnect(svrSock, true);
+			}
+		}
+	}
+	
+	return;
+}
+
+#ifndef WIN32
+#include <netdb.h>
+#endif
+
+bool STNetEngine::AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort )
+{
+	if ( NULL == lpszHostAddress ) return false;
+	//将域名转换为真实IP，如果lpszHostAddress本来就是ip，不影响转换结果
+	char ip[64]; //真实IP
+#ifdef WIN32
+	PHOSTENT hostinfo;   
+#else
+	struct hostent * hostinfo;   
+#endif
+	strcpy( ip, lpszHostAddress ); 
+	if((hostinfo = gethostbyname(lpszHostAddress)) != NULL)   
+	{
+		strcpy( ip, inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list) ); 
+	}
+
+	//使用真实ip进行连接
+	sockaddr_in sockAddr;
+	memset(&sockAddr,0,sizeof(sockAddr));
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = inet_addr(ip);
+	sockAddr.sin_port = htons( nHostPort );
+
+	if ( SOCKET_ERROR != connect(svrSock, (sockaddr*)&sockAddr, sizeof(sockAddr)) ) return true;
+
+	return false;
+}
+
+void* STNetEngine::ConnectFailed( STNetEngine::SVR_CONNECT *pSvr )
+{
+	if ( NULL == pSvr ) return NULL;
+	char ip[32];
+	int port;
+	int reConnectSecond;
+	i64ToAddr(ip, port, pSvr->addr);
+	reConnectSecond = pSvr->reConnectSecond;
+	SOCKET svrSock = pSvr->sock;
+	pSvr->sock = INVALID_SOCKET;
+	pSvr->state = SVR_CONNECT::unconnected;
+	closesocket(svrSock);
+
+	m_pNetServer->OnConnectFailed( ip, port, reConnectSecond );
+
+	return NULL;
 }
 
 }

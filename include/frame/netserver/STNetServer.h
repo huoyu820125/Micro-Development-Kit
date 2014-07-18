@@ -1,7 +1,6 @@
 #ifndef MDK_C_NET_SERVER_H
 #define MDK_C_NET_SERVER_H
 
-#include "../../../include/mdk/Thread.h"
 #include "STNetHost.h"
 
 namespace mdk
@@ -23,30 +22,26 @@ private:
 	 * 
 	 */
 	STNetEngine* m_pNetCard;
-	//主线程
-	Thread m_mainThread;
 	bool m_bStop;
 	
 protected:
 public:
-	void* RemoteCall TMain(void* pParam);
 	/*
-		后台业务线程，回调方法
-		
-			服务器业务线程不做任何事情，直接调用此方法，此方法退出，则服务器业务线程退出
-		※此线程退出，不表示服务器停止，这只是业务逻辑线程，
-			服务器完全可以没有长期运行于后台的业务逻辑，只处理网络消息
-
-	 	触发时机：服务器启动
-
-		退出时机：
-			Stop()被调用后，3s内不自己退出则被强制杀死
-				IF业务中存在循环，可以使用IsOK()检查是否有Stop()被调用
-				IF业务中存在线程挂起函数，需要在Stop()调用前自行发送信号唤醒线程正常结束
+		主函数，回调方法
+			此方法将在主线程中循环被调用，直到此方法return 0,则主线程不再调用此方法
+			主线程伪码如下
+			while ( 没有停止 )
+			{
+				执行Main()
+				等待网络IO发生(最多10秒)，如果有io发生，则执行OnConncect() OnMsg() OnCloseConnect()
+				如果有未成功的链接，尝试链接
+				检查所有链接的心跳
+			}
 			
-	 	用户也可以忽略此方法，自己创建主线程
-	 */
-	virtual void* Main(void* pParam){ return 0; }
+	 		※不建议用户自己创建主线程，单线程版没有Lock控制，如果在自己的主线程中调用本类的方法将不保证有效，甚至崩溃
+			如果觉得单线程排队时间太长，请使用多线程版
+	*/
+	virtual int Main(){ return 0; }
 	
 	/**
 		有新连接进来，业务处理回调方法
@@ -55,6 +50,11 @@ public:
 			用于数据io和一些其它主机操作，具体参考STNetHost类
 	 */
 	virtual void OnConnect(STNetHost &host){}
+	/*
+	响应链接到地址失败的情况。
+	reConnectSecond是调用Connect()时候的传入最后一个参数，表示底层在多长时间后会自动尝试再次链接这个地址，小于0表示不会尝试
+	*/	
+	virtual void OnConnectFailed( char *ip, int port, int reConnectTime ){}
 	/**
 		有连接断开，业务处理回调方法
 		参数：
@@ -99,15 +99,15 @@ public:
 	//设置单个服务器进程可能承载的平均连接数，默认5000
 	void SetAverageConnectCount(int count);
 	//设置自动重连时间,最小10s，不设置则，或设置小于等于0，服务器不重连
-	//使用Connect()方法连接的地址断开时，系统会定时尝试重新连接
-	void SetReconnectTime( int nSecond );
 	//设置心跳时间,最小10s，不设置则，或设置小于等于0，服务器不检查心跳
 	void SetHeartTime( int nSecond );
 	//监听某个端口，可多次调用监听多个端口
 	bool Listen(int port);
-	//连接外部服务器，可多次调用连接多个外部服务器
+	//异步连接外部服务器，可多次调用连接多个外部服务器
+	//可对同一个ip端口，调用多次，产生多个链接
+	//reConnectTime 此链接断开后，自动重连的等待时间，最小10s，不传递或传递小于等于0，则断开后不重连
 	//※不要连接自身，服务器未做此测试，可能出现bug
-	bool Connect(const char *ip, int port);
+	bool Connect(const char *ip, int port, int reConnectTime = -1);
 	/*
 		广播消息
 		向属于recvGroupIDs中任意一组，同时过滤掉属于filterGroupIDs中任意一组的主机，发送消息
