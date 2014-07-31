@@ -1,3 +1,2 @@
-V1.73(2014-07-18 15:42)
-1.Connect异步链接更新到单线程版
-2.删除STNetServer::TMain()线程,将STNetServer::Main()移到STNetEngine主线程中，使单线程版成为真正的单线程
+V1.74(2014-07-31 18:42)
+1.NetHost中修改过的代码忘记复制到STNetHost中
