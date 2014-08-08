@@ -826,8 +826,22 @@ void* NetEngine::ConnectThread(void*)
 				successed = true;
 				memset(&sockAddr, 0, sizeof(sockAddr));
 				socklen_t nSockAddrLen = sizeof(sockAddr);
-				int gpn = getpeername( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen );
-				if ( SOCKET_ERROR == gpn ) successed = false;
+				if ( SOCKET_ERROR == getsockname( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen ) ) successed = false;
+				else
+				{
+					int m_nWanPort = ntohs(sockAddr.sin_port);
+					std::string m_strWanIP = inet_ntoa(sockAddr.sin_addr);
+					if ( "0.0.0.0" == m_strWanIP ) successed = false;
+					else
+					{
+						memset(&sockAddr, 0, sizeof(sockAddr));
+						nSockAddrLen = sizeof(sockAddr);
+						if ( SOCKET_ERROR == getpeername( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen ) ) 
+						{
+							successed = false;
+						}
+					}
+				}
 
 				if ( !successed )
 				{
