@@ -242,6 +242,13 @@ void* STNetEngine::Main(void*)
 	time_t curTime = time(NULL);
 	
 	bool mainFinished = false;
+#ifndef WIN32
+	m_hEPoll = epoll_create(20000);
+	mdk_assert( -1 != m_hEPoll );
+	m_events = new epoll_event[20000];	//epoll事件
+	mdk_assert( NULL != m_events );
+#endif
+	m_clientList= (SVR_CONNECT**)new mdk::uint64[20000];
 	while ( !m_stop ) 
 	{
 		if ( !mainFinished )
@@ -260,6 +267,12 @@ void* STNetEngine::Main(void*)
 		HeartMonitor();
 		ConnectAll();
 	}
+
+	uint64 *p = (uint64*)m_clientList;
+	delete[]p;
+#ifndef WIN32
+	delete[]m_events;
+#endif
 	return NULL;
 }
 
@@ -634,28 +647,34 @@ bool STNetEngine::Connect(const char* ip, int port, int reConnectTime)
 	
 	//保存链接结果
 	pSvr->lastConnect = time(NULL);
-	if ( ConnectOtherServer(ip, port, pSvr->sock) )
+	ConnectResult ret = ConnectOtherServer(ip, port, pSvr->sock);
+	if ( STNetEngine::success == ret )
 	{
 		pSvr->state = SVR_CONNECT::connected;
 		OnConnect(pSvr->sock, true);
 	}
-	else
+	else if ( STNetEngine::waitReulst == ret )
 	{
 		pSvr->state = SVR_CONNECT::connectting;
+	}
+	else //报告失败
+	{
+		pSvr->state = SVR_CONNECT::unconnectting;
+		ConnectFailed( pSvr );
 	}
 	
 	return true;
 }
 
-bool STNetEngine::ConnectOtherServer(const char* ip, int port, SOCKET &svrSock)
+STNetEngine::ConnectResult STNetEngine::ConnectOtherServer(const char* ip, int port, SOCKET &svrSock)
 {
 	svrSock = INVALID_SOCKET;
 	Socket sock;//监听socket
-	if ( !sock.Init( Socket::tcp ) ) return false;
+	if ( !sock.Init( Socket::tcp ) ) return STNetEngine::cannotCreateSocket;
 	sock.SetSockMode();
+// 	bool successed = sock.Connect(ip, port);
 	svrSock = sock.Detach();
-	bool successed = AsycConnect(svrSock, ip, port);
-	return successed;
+	return AsycConnect(svrSock, ip, port);
 }
 
 bool STNetEngine::ConnectAll()
@@ -700,14 +719,20 @@ bool STNetEngine::ConnectAll()
 			}
 			
 			pSvr->lastConnect = curTime;
-			if ( ConnectOtherServer(ip, port, pSvr->sock) )
+			ConnectResult ret = ConnectOtherServer(ip, port, pSvr->sock);
+			if ( STNetEngine::success == ret )
 			{
 				pSvr->state = SVR_CONNECT::connected;
 				OnConnect(pSvr->sock, true);
 			}
-			else 
+			else if ( STNetEngine::waitReulst == ret )
 			{
 				pSvr->state = SVR_CONNECT::connectting;
+			}
+			else //报告失败
+			{
+				pSvr->state = SVR_CONNECT::unconnectting;
+				ConnectFailed( pSvr );
 			}
 			itSvr++;
 		}
@@ -784,103 +809,27 @@ const char* STNetEngine::GetInitError()//取得启动错误信息
 
 void STNetEngine::Select()
 {
-	fd_set readfds; 
-	fd_set sendfds; 
-	std::vector<SVR_CONNECT*> clientList;
-	int clientCount;
-	int startPos = 0;
-	int endPos = 0;
+	int clientCount = 0;
 	int i = 0;
-	SOCKET maxSocket = 0;
-	sockaddr_in sockAddr;
-	char ip[32];
-	int port;
 	SVR_CONNECT *pSvr = NULL;
-	
 	//复制所有connectting状态的sock到监听列表
-	clientList.clear();
+	clientCount = 0;
+	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
+	for ( ; it != m_keepIPList.end() && clientCount < 20000; it++ )
 	{
-		vector<SVR_CONNECT*> sockArray;
-		map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
-		for ( ; it != m_keepIPList.end(); it++ )
+		for ( i = 0; i < it->second.size() && clientCount < 20000; i++ )
 		{
-			for ( i = 0; i < it->second.size(); i++ )
-			{
-				pSvr = it->second[i];
-				if ( SVR_CONNECT::connectting != pSvr->state ) continue;
-				clientList.push_back(pSvr);
-			}
+			pSvr = it->second[i];
+			if ( SVR_CONNECT::connectting != pSvr->state ) continue;
+			mdk_assert( INVALID_SOCKET != pSvr->sock );
+			m_clientList[clientCount++] = pSvr;
 		}
 	}
-	
-	//开始监听，每次监听1000个sock,select1次最大监听1024个
-	clientCount = clientList.size();
-	SOCKET svrSock;
-	for ( endPos = 0; endPos < clientCount; )
-	{
-		maxSocket = 0;
-		FD_ZERO(&readfds);     
-		FD_ZERO(&sendfds);  
-		startPos = endPos;//记录本次监听sock开始位置
-		for ( i = 0; i < FD_SETSIZE - 1 && endPos < clientCount; i++ )
-		{
-			pSvr = clientList[endPos];
-			if ( maxSocket < pSvr->sock ) maxSocket = pSvr->sock;
-			i64ToAddr(ip, port, pSvr->addr);
-			FD_SET(pSvr->sock, &readfds); 
-			FD_SET(pSvr->sock, &sendfds); 
-			endPos++;
-		}
-		
-		//超时设置
-		timeval outtime;
-		outtime.tv_sec = 0;
-		outtime.tv_usec = 0;
-		int nSelectRet;
-		nSelectRet=::select( maxSocket + 1, &readfds, &sendfds, NULL, &outtime ); //检查读写状态
-		if ( SOCKET_ERROR == nSelectRet ) continue;
-		
-		int readSize = 0;
-		bool successed = true;
-		for ( i = startPos; i < endPos; i++ )
-		{
-			pSvr = clientList[i];
-			svrSock = pSvr->sock;
-			i64ToAddr(ip, port, pSvr->addr);
-			if ( 0 != nSelectRet && !FD_ISSET(svrSock, &readfds) && !FD_ISSET(svrSock, &sendfds) ) continue;
-
-			successed = true;
-			memset(&sockAddr, 0, sizeof(sockAddr));
-			socklen_t nSockAddrLen = sizeof(sockAddr);
-			if ( SOCKET_ERROR == getsockname( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen ) ) successed = false;
-			else
-			{
-				int m_nWanPort = ntohs(sockAddr.sin_port);
-				std::string m_strWanIP = inet_ntoa(sockAddr.sin_addr);
-				if ( "0.0.0.0" == m_strWanIP ) successed = false;
-				else
-				{
-					memset(&sockAddr, 0, sizeof(sockAddr));
-					nSockAddrLen = sizeof(sockAddr);
-					if ( SOCKET_ERROR == getpeername( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen ) ) 
-					{
-						successed = false;
-					}
-				}
-			}
-			
-			if ( !successed )
-			{
-				pSvr->state = SVR_CONNECT::unconnectting;
-				ConnectFailed( pSvr );
-			}
-			else
-			{
-				pSvr->state = SVR_CONNECT::connected;
-				OnConnect(svrSock, true);
-			}
-		}
-	}
+#ifndef WIN32
+	EpollConnect( m_clientList, clientCount );
+#else
+	SelectConnect( m_clientList, clientCount );
+#endif
 	
 	return;
 }
@@ -889,9 +838,9 @@ void STNetEngine::Select()
 #include <netdb.h>
 #endif
 
-bool STNetEngine::AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort )
+STNetEngine::ConnectResult STNetEngine::AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort )
 {
-	if ( NULL == lpszHostAddress ) return false;
+	if ( NULL == lpszHostAddress ) return STNetEngine::invalidParam;
 	//将域名转换为真实IP，如果lpszHostAddress本来就是ip，不影响转换结果
 	char ip[64]; //真实IP
 #ifdef WIN32
@@ -912,9 +861,24 @@ bool STNetEngine::AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsi
 	sockAddr.sin_addr.s_addr = inet_addr(ip);
 	sockAddr.sin_port = htons( nHostPort );
 
-	if ( SOCKET_ERROR != connect(svrSock, (sockaddr*)&sockAddr, sizeof(sockAddr)) ) return true;
+	if ( SOCKET_ERROR != connect(svrSock, (sockaddr*)&sockAddr, sizeof(sockAddr)) ) 
+	{
+		return STNetEngine::success;
+	}
+#ifndef WIN32
+	if ( EINPROGRESS == errno ) 
+	{
+		return STNetEngine::waitReulst;
+	}
+#else
+	int nError = GetLastError();
+	if ( WSAEWOULDBLOCK == nError ) 
+	{
+		return STNetEngine::waitReulst;
+	}
+#endif
 
-	return false;
+	return STNetEngine::faild;
 }
 
 void* STNetEngine::ConnectFailed( STNetEngine::SVR_CONNECT *pSvr )
@@ -933,6 +897,286 @@ void* STNetEngine::ConnectFailed( STNetEngine::SVR_CONNECT *pSvr )
 	m_pNetServer->OnConnectFailed( ip, port, reConnectSecond );
 
 	return NULL;
+}
+
+bool STNetEngine::EpollConnect( SVR_CONNECT **clientList, int clientCount )
+{
+	bool finished = true;
+	static time_t start = -1;
+
+#ifndef WIN32
+	int i = 0;
+	SVR_CONNECT *pSvr = NULL;
+	epoll_event ev;
+	int monitorCount = 0;
+
+
+	//////////////////////////////////////////////////////////////////////////
+	//全部加入监听队列
+	for ( i = 0; i < clientCount; i++ )
+	{
+		pSvr = clientList[i];
+		ev.events = EPOLLIN|EPOLLOUT|EPOLLET;
+		ev.data.ptr = pSvr;
+		if ( 0 > epoll_ctl(m_hEPoll, EPOLL_CTL_ADD, pSvr->sock, &ev) ) pSvr->inEpoll = false;
+		else 
+		{
+			pSvr->inEpoll = true;
+			monitorCount++;
+		}
+	}
+
+	if ( -1 == start ) start = time(NULL);
+	//////////////////////////////////////////////////////////////////////////
+	//循环epoll_wait()直到真实失败or超时or返回事件
+	int count = 0;
+	while ( true )
+	{
+		count = epoll_wait(m_hEPoll, m_events, 20000, 0 );
+		if ( -1 == count ) 
+		{
+			if ( EINTR == errno ) continue;//假失败
+		}
+		break;
+	}
+	if ( 0 == count )
+	{
+		time_t curtime = time(NULL);
+		if ( curtime - start < 20 ) return true;
+		start = -1;
+	}
+	if ( -1 == count ) printf( "epoll_wait return %d\n", count );
+	volatile int errCode = errno;//epoll_wait失败时状态
+
+	/*
+		过程A:必须先于过程B执行
+		因为过程B如果发现链接失败，会将clientList[i]->sock设置为INVALID_SOCKET
+		过程A再想清理epoll监听列队时，在clientList中就已经找不到这个句柄了
+	*/
+	//////////////////////////////////////////////////////////////////////////
+	//过程A:清空epoll监听队列，并补全遗漏的通知
+	/*
+		遍历监听区间
+		将所有监听中的句柄从epoll监听队列删除
+		将所有放入epoll监听队列失败的句柄，认为是可读可写的，去尝试一下链接是否成功
+	*/
+	errCode = errno;//epoll_wait失败时状态
+	volatile SOCKET delSock = 0;
+	volatile SOCKET delError = 0;
+	for ( i = 0; i < clientCount; i++ )
+	{
+		if ( clientList[i]->inEpoll )
+		{
+			if ( 0 >= count ) ConnectIsFinished(clientList[i], true, true, count, errCode );
+			delSock = clientList[i]->sock;
+			clientList[i]->inEpoll = false;
+			delError = epoll_ctl(m_hEPoll, EPOLL_CTL_DEL, clientList[i]->sock, NULL); 
+			mdk_assert( 0 == delError );//不应该删除失败，如果失败强制崩溃
+		}
+		else//添加到Epoll失败的句柄，认为可读可写，进入尝试取IP等方法
+		{
+			ConnectIsFinished(clientList[i], true, true, 1, errCode );
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	//过程B:处理事件
+	if ( 0 < count ) //处理epoll通知结果
+	{
+		if ( count < monitorCount ) finished = false;//存在尚未返回结果的sock
+		for ( i = 0; i < count; i++ )
+		{
+			pSvr = (SVR_CONNECT*)(m_events[i].data.ptr);
+			if ( !ConnectIsFinished(pSvr, m_events[i].events&EPOLLIN, m_events[i].events&EPOLLOUT, count, errCode ) )//sock尚未返回结果
+			{
+				finished = false;
+			}
+		}
+	}
+
+#endif
+	return finished;
+}
+
+bool STNetEngine::SelectConnect( SVR_CONNECT **clientList, int clientCount )
+{
+	bool finished = true;
+	static time_t start = -1;
+#ifdef WIN32
+	int startPos = 0;
+	int endPos = 0;
+	int i = 0;
+	SOCKET maxSocket = 0;
+	SVR_CONNECT *pSvr = NULL;
+	fd_set readfds; 
+	fd_set sendfds; 
+
+
+	//开始监听，每次监听1000个sock,select1次最大监听1024个
+	SOCKET svrSock;
+	for ( endPos = 0; endPos < clientCount; )
+	{
+		maxSocket = 0;
+		FD_ZERO(&readfds);     
+		FD_ZERO(&sendfds);  
+		startPos = endPos;//记录本次监听sock开始位置
+		for ( i = 0; i < FD_SETSIZE - 1 && endPos < clientCount; i++ )
+		{
+			pSvr = clientList[endPos];
+			if ( maxSocket < pSvr->sock ) maxSocket = pSvr->sock;
+			FD_SET(pSvr->sock, &readfds); 
+			FD_SET(pSvr->sock, &sendfds); 
+			endPos++;
+		}
+
+		//超时设置
+		timeval outtime;
+		outtime.tv_sec = 0;
+		outtime.tv_usec = 0;
+		if ( -1 == start ) start = time(NULL);
+		int nSelectRet =::select( maxSocket + 1, &readfds, &sendfds, NULL, &outtime ); //检查读写状态
+		if ( 0 == nSelectRet )
+		{
+			time_t curtime = time(NULL);
+			if ( curtime - start < 20 ) return true;
+			start = -1;
+		}
+		int errCode = GetLastError();
+		if ( SOCKET_ERROR == nSelectRet ) //出错时错误码和打印所有句柄状态
+		{
+			printf( "select return %d\n", nSelectRet );
+			for ( i = startPos; i < endPos; i++ )
+			{
+				pSvr = clientList[i];
+				svrSock = pSvr->sock;
+				printf( "select = %d errno(%d) sock(%d) read(%d) send(%d)\n", nSelectRet, errCode, svrSock, FD_ISSET(svrSock, &readfds), FD_ISSET(svrSock, &sendfds) );
+			}
+		}
+
+		for ( i = startPos; i < endPos; i++ )
+		{
+			if ( !ConnectIsFinished(clientList[i], 
+				0 != FD_ISSET(clientList[i]->sock, &readfds), 
+				0 != FD_ISSET(clientList[i]->sock, &sendfds), 
+				nSelectRet, errCode ) )//链接尚未返回结果,遍历结束后不等待，继续监听未返回的sock
+			{
+				finished = false;
+			}
+		}
+	}
+#endif
+	return finished;
+}
+
+bool STNetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool sendable, int api, int errorCode )
+{
+	int reason = 0;
+	bool successed = true;
+	int nSendSize0 = 0;
+	int sendError0 = 0;
+	int nSendSize1 = 0;
+	int sendError1 = 0;
+	char buf[256];
+	int nRecvSize0 = 0;
+	int recvError0 = 0;
+	int nRecvSize1 = 0;
+	int recvError1 = 0;
+	char clientIP[256];
+	char serverIP[256];
+	SOCKET svrSock = pSvr->sock;
+
+	if ( sendable )
+	{
+		nSendSize0 = send(svrSock, buf, 0, 0);
+		sendError0 = 0;
+		if ( 0 > nSendSize0 ) 
+		{
+#ifdef WIN32
+			sendError0 = GetLastError();
+#else
+			sendError0 = errno;
+#endif
+			successed = false;
+		}
+	}
+	if ( readable )
+	{
+		nRecvSize0 = recv(svrSock, buf, 0, MSG_PEEK);
+		recvError0 = 0;
+		if ( SOCKET_ERROR == nRecvSize0 )
+		{
+#ifdef WIN32
+			recvError0 = GetLastError();
+#else
+			recvError0 = errno;
+#endif
+			successed = false;
+		}
+
+		nRecvSize1 = recv(svrSock, buf, 1, MSG_PEEK);
+		recvError1 = 0;
+		if ( SOCKET_ERROR == nRecvSize1 )
+		{
+#ifdef WIN32
+			recvError1 = GetLastError();
+#else
+			recvError1 = errno;
+#endif
+			successed = false;
+		}
+	}
+
+	if ( 0 >= api ) 
+	{
+		successed = false;
+		reason = 1;
+	}
+	else if ( successed )
+	{
+		if ( !readable && !sendable ) //sock尚未返回结果
+		{
+			return false;
+		}
+		sockaddr_in sockAddr;
+		memset(&sockAddr, 0, sizeof(sockAddr));
+		socklen_t nSockAddrLen = sizeof(sockAddr);
+		if ( SOCKET_ERROR == getsockname( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen ) ) 
+		{
+			reason = 2;
+			successed = false;
+		}
+		else
+		{
+			strcpy(clientIP, inet_ntoa(sockAddr.sin_addr));
+
+			if ( 0 == strcmp("0.0.0.0", clientIP) ) 
+			{
+				reason = 3;
+				successed = false;
+			}
+			else
+			{
+				memset(&sockAddr, 0, sizeof(sockAddr));
+				nSockAddrLen = sizeof(sockAddr);
+				if ( SOCKET_ERROR == getpeername( svrSock, (sockaddr*)&sockAddr, &nSockAddrLen ) ) 
+				{
+					reason = 4;
+					successed = false;
+				}
+				else strcpy(serverIP, inet_ntoa(sockAddr.sin_addr));
+			}
+		}
+	}
+	if ( !successed )
+	{
+		pSvr->state = SVR_CONNECT::unconnectting;
+		ConnectFailed( pSvr );
+		return true;
+	}
+
+	pSvr->state = SVR_CONNECT::connected;
+	OnConnect(svrSock, true);
+	return true;
 }
 
 }

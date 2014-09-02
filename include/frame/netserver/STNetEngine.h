@@ -10,6 +10,9 @@
 #include <map>
 #include <vector>
 #include <string>
+#ifndef WIN32
+#include <sys/epoll.h>
+#endif
 
 namespace mdk
 {
@@ -86,6 +89,9 @@ protected:
 		int reConnectSecond;		//重链时间，小于0表示不重链
 		time_t lastConnect;			//上次尝试链接时间
 		ConnectState state;			//链接状态
+#ifndef WIN32
+		bool inEpoll;				//在epoll中
+#endif
 	}SVR_CONNECT;
 	std::map<uint64,std::vector<SVR_CONNECT*> > m_keepIPList;//要保持连接的外部服务地址列表，断开会重连
 protected:
@@ -125,13 +131,24 @@ private:
 	bool ListenAll();//监听所有注册的端口
 	//////////////////////////////////////////////////////////////////////////
 	//与其它服务器交互
-	bool ConnectOtherServer(const char* ip, int port, SOCKET &svrSock);//异步连接一个服务,立刻成功返回true，否则返回false，等待select结果
+	enum ConnectResult
+	{
+		success = 0,
+		waitReulst = 1,
+		cannotCreateSocket = 2,
+		invalidParam = 3,
+		faild = 4,
+	};
+	STNetEngine::ConnectResult ConnectOtherServer(const char* ip, int port, SOCKET &svrSock);//异步连接一个服务,立刻成功返回true，否则返回false，等待select结果
 	bool ConnectAll();//连接所有注册的服务，已连接的会自动跳过
 	void SetServerClose(STNetConnect *pConnect);//设置已连接的服务为关闭状态
 	const char* GetInitError();//取得启动错误信息
 	void Select();//检查向外发起链接的结果
-	bool AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort );
 	void* ConnectFailed( STNetEngine::SVR_CONNECT *pSvr );
+	STNetEngine::ConnectResult AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort );
+	bool EpollConnect( SVR_CONNECT **clientList, int clientCount );//clientCount个连接全部收到结果，返回true,否则返回false
+	bool SelectConnect( SVR_CONNECT **clientList, int clientCount );//clientCount个连接全部收到结果，返回true,否则返回false
+	bool ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool sendable, int api, int errorCode );//链接已完成返回true（不表示成功，失败也是完成，外部不需要处理，成功失败在内部已处理），否则返回false
 public:
 	/**
 	 * 构造函数,绑定服务器与通信策略
@@ -162,6 +179,11 @@ public:
 		reConnectTime < 0表示断开后不重新自动链接
 	*/
 	bool Connect(const char* ip, int port, int reConnectTime);
+	SVR_CONNECT** m_clientList;
+#ifndef WIN32
+	int m_hEPoll;
+	epoll_event *m_events;
+#endif
 };
 
 }  // namespace mdk
