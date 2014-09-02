@@ -933,11 +933,11 @@ bool NetEngine::EpollConnect( SVR_CONNECT **clientList, int clientCount )
 	{
 		if ( clientList[i]->inEpoll )
 		{
-			if ( 0 >= count ) ConnectIsFinished(clientList[i], true, true, count, errCode );
 			delSock = clientList[i]->sock;
 			clientList[i]->inEpoll = false;
 			delError = epoll_ctl(m_hEPoll, EPOLL_CTL_DEL, clientList[i]->sock, NULL); 
 			mdk_assert( 0 == delError );//不应该删除失败，如果失败强制崩溃
+			if ( 0 >= count ) ConnectIsFinished(clientList[i], true, true, count, errCode );//不能早于epoll_ctl删除，原因同过程A过程B执行顺序
 		}
 		else//添加到Epoll失败的句柄，认为可读可写，进入尝试取IP等方法
 		{
