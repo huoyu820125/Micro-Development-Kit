@@ -45,10 +45,15 @@ bool Signal::Wait( unsigned long lMillSecond )
 	else
 	{
 		int nSecond = lMillSecond / 1000;
-		int nNSecond = (lMillSecond - nSecond * 1000) * 1000;
-		timespec timeout;
-		timeout.tv_sec=time(NULL) + nSecond;         
-		timeout.tv_nsec=nNSecond;
+		int nNSecond = (lMillSecond % 1000) * 1000000;
+		
+		struct timespec timeout;
+		clock_gettime(CLOCK_REALTIME, &timeout);
+		timeout.tv_sec += nSecond;
+		timeout.tv_nsec += nNSecond;
+		
+		timeout.tv_sec += timeout.tv_nsec / (1000 * 1000 * 1000);
+		timeout.tv_nsec = timeout.tv_nsec % (1000 * 1000 * 1000);
 		if ( 0 != sem_timedwait(&m_signal, &timeout) ) bHasSingle = false;
 	}
 	/*
@@ -60,7 +65,7 @@ bool Signal::Wait( unsigned long lMillSecond )
 	 */
 	if ( 1 == AtomDec(&m_waitCount, 1) )
 	{
-		sem_init( &m_signal, 1, 0 );
+		sem_init( &m_signal, 0, 0 );
 	}
 #endif
 	
