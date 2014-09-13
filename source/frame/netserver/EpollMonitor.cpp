@@ -67,8 +67,9 @@ bool EpollMonitor::Stop()
 #ifndef WIN32
 	if ( m_bStop ) return true;
 	m_bStop = true;
-	AddRecv(m_epollExit, NULL, 0);
-	AddSend(m_epollExit, NULL, 0);
+	int64 connectId = -1;//预留id
+	AddRecv(m_epollExit, (char*)&connectId, sizeof(int64));
+	AddSend(m_epollExit, (char*)&connectId, sizeof(int64));
 	AddAccept(m_epollExit);
 	::closesocket(m_epollExit);
 #endif
@@ -81,34 +82,36 @@ bool EpollMonitor::AddAccept( SOCKET sock )
 #ifndef WIN32
 	epoll_event ev;
     ev.events = EPOLLIN|EPOLLONESHOT;
-    ev.data.fd = sock;
-//  	ev.data.ptr = 0;
+	if ( sock == m_epollExit ) ev.data.u64 = -1;
+    else ev.data.u64 = (int64)sock;
 	if ( 0 > epoll_ctl(m_hEPollAccept, EPOLL_CTL_MOD, sock, &ev) ) return false;
 #endif	
 	return true;
 }
 
 //增加一个接收数据的操作，有数据到达，WaitEvent会返回
-bool EpollMonitor::AddRecv( SOCKET sock, char* recvBuf, unsigned short bufSize )
+bool EpollMonitor::AddRecv( SOCKET sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
+	int64 connectId = 0;
+	memcpy((char*)(&connectId), pData, dataSize);
 	epoll_event ev;
 	ev.events = EPOLLIN|EPOLLONESHOT;
-	ev.data.fd = sock;
-//   	ev.data.ptr = (void*)1;
+	ev.data.u64 = connectId;
 	if ( 0 > epoll_ctl(m_hEPollIn, EPOLL_CTL_MOD, sock, &ev) ) return false;
 #endif	
 	return true;
 }
 
 //增加一个发送数据的操作，发送完成，WaitEvent会返回
-bool EpollMonitor::AddSend( SOCKET sock, char* dataBuf, unsigned short dataSize )
+bool EpollMonitor::AddSend( SOCKET sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
+	int64 connectId = 0;
+	memcpy((char*)(&connectId), pData, dataSize);
  	epoll_event ev;
 	ev.events = EPOLLOUT|EPOLLONESHOT;
-	ev.data.fd = sock;
-//  	ev.data.ptr = (void*)1;
+	ev.data.u64 = connectId;
 	if ( epoll_ctl(m_hEPollOut, EPOLL_CTL_MOD, sock, &ev) < 0 ) return false;
 #endif	
 	return true;
@@ -138,11 +141,11 @@ bool EpollMonitor::DelMonitorOut( SOCKET sock )
 	return true;
 }
 
-bool EpollMonitor::AddMonitor( SOCKET sock )
+bool EpollMonitor::AddMonitor( SOCKET sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
-	if ( !AddDataMonitor(sock) ) return false;
-	if ( !AddSendableMonitor(sock) ) return false;
+	if ( !AddDataMonitor(sock, pData, dataSize) ) return false;
+	if ( !AddSendableMonitor(sock, pData, dataSize) ) return false;
 #endif	
 	return true;
 }
@@ -152,29 +155,33 @@ bool EpollMonitor::AddConnectMonitor( SOCKET sock )
 #ifndef WIN32
 	epoll_event ev;
 	ev.events = EPOLLONESHOT;
-	ev.data.fd = sock;
+	ev.data.u64 = sock;
 	if ( epoll_ctl(m_hEPollAccept, EPOLL_CTL_ADD, sock, &ev) < 0 ) return false;
 #endif	
 	return true;
 }
 
-bool EpollMonitor::AddDataMonitor( SOCKET sock )
+bool EpollMonitor::AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
+	int64 connectId = 0;
+	memcpy((char*)(&connectId), pData, dataSize);
 	epoll_event ev;
 	ev.events = EPOLLONESHOT;
-	ev.data.fd = sock;
+	ev.data.u64 = connectId;
 	if ( epoll_ctl(m_hEPollIn, EPOLL_CTL_ADD, sock, &ev) < 0 ) return false;
 #endif	
 	return true;
 }
 
-bool EpollMonitor::AddSendableMonitor( SOCKET sock )
+bool EpollMonitor::AddSendableMonitor( SOCKET sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
+	int64 connectId = 0;
+	memcpy((char*)(&connectId), pData, dataSize);
 	epoll_event ev;
 	ev.events = EPOLLONESHOT;
-	ev.data.fd = sock;
+	ev.data.u64 = connectId;
 	if ( epoll_ctl(m_hEPollOut, EPOLL_CTL_ADD, sock, &ev) < 0 ) return false;
 #endif	
 	return true;
@@ -240,9 +247,9 @@ bool EpollMonitor::WaitSendable( void *eventArray, int &count, int timeout )
 	return true;
 }
 
-bool EpollMonitor::IsStop( SOCKET sock )
+bool EpollMonitor::IsStop( int64 connectId )
 {
-	if ( sock == m_epollExit ) return true;
+	if ( connectId == -1 ) return true;
 	return false;
 }
 

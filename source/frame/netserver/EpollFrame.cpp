@@ -69,14 +69,14 @@ void EpollFrame::NewConnectMonitor()
 
 		for ( i = 0; i < nCount; i++ )
 		{
-			if ( ((EpollMonitor*)m_pNetMonitor)->IsStop(events[i].data.fd) ) 
+			if ( ((EpollMonitor*)m_pNetMonitor)->IsStop(events[i].data.u64) ) 
 			{
 				delete[]events;
 				return;
 			}
 
 			listenSock.Detach();
-			listenSock.Attach(events[i].data.fd);
+			listenSock.Attach((SOCKET)events[i].data.u64);
 			while ( true )
 			{
 				listenSock.Accept( clientSock );
@@ -87,7 +87,11 @@ void EpollFrame::NewConnectMonitor()
 				}
 				OnConnect(clientSock.Detach(), false);
 			}
-			if ( !m_pNetMonitor->AddAccept( listenSock.GetSocket() ) ) listenSock.Close();
+			if ( !m_pNetMonitor->AddAccept( listenSock.GetSocket() ) ) 
+			{
+				printf( "AddAccept (%d) error \n", listenSock.GetSocket() );
+				listenSock.Close();
+			}
 		}
 	}
 	delete[]events;
@@ -100,8 +104,8 @@ void EpollFrame::DataMonitor()
 	int nCount = MAXPOLLSIZE;
 	epoll_event *events = new epoll_event[nCount];	//epoll事件
 	int i = 0;
-	map<SOCKET,int> ioList;
-	map<SOCKET,int>::iterator it;
+	map<int64,int> ioList;
+	map<int64,int>::iterator it;
 	bool ret = false;
 	while ( !m_stop )
 	{
@@ -116,16 +120,16 @@ void EpollFrame::DataMonitor()
 		//加入到ioList中
 		for ( i = 0; i < nCount; i++ )
 		{
-			if ( ((EpollMonitor*)m_pNetMonitor)->IsStop(events[i].data.fd) ) 
+			if ( ((EpollMonitor*)m_pNetMonitor)->IsStop(events[i].data.u64) ) 
 			{
 				delete[]events;
 				return;
 			}
 
 			//对于recv send则加入到io列表，统一调度
-			it = ioList.find(events[i].data.fd);
+			it = ioList.find(events[i].data.u64);
 			if ( it != ioList.end() ) continue;
-			ioList.insert(map<SOCKET,int>::value_type(events[i].data.fd, 1) );//增加可io的对象
+			ioList.insert(map<int64,int>::value_type(events[i].data.u64, 1) );//增加可io的对象
 		}
 		
 		//遍历ioList，执行1次io
@@ -162,8 +166,8 @@ void EpollFrame::SendAbleMonitor()
 	int nCount = MAXPOLLSIZE;
 	epoll_event *events = new epoll_event[nCount];	//epoll事件
 	int i = 0;
-	map<SOCKET,int> ioList;
-	map<SOCKET,int>::iterator it;
+	map<int64,int> ioList;
+	map<int64,int>::iterator it;
 	bool ret = false;
 	while ( !m_stop )
 	{
@@ -178,16 +182,16 @@ void EpollFrame::SendAbleMonitor()
 		//加入到ioList中
 		for ( i = 0; i < nCount; i++ )
 		{
-			if ( ((EpollMonitor*)m_pNetMonitor)->IsStop(events[i].data.fd) ) 
+			if ( ((EpollMonitor*)m_pNetMonitor)->IsStop(events[i].data.u64) ) 
 			{
 				delete[]events;
 				return;
 			}
 
 			//对于recv send则加入到io列表，统一调度
-			it = ioList.find(events[i].data.fd);
+			it = ioList.find(events[i].data.u64);
 			if ( it != ioList.end() ) continue;
-			ioList.insert(map<SOCKET,int>::value_type(events[i].data.fd, 2) );//增加可io的对象
+			ioList.insert(map<int64,int>::value_type(events[i].data.u64, 2) );//增加可io的对象
 		}
 
 		//遍历ioList，执行1次io
@@ -231,7 +235,8 @@ connectState EpollFrame::RecvData( NetConnect *pConnect, char *pData, unsigned s
 		if ( nRecvLen < 0 ) return unconnect;
 		if ( 0 == nRecvLen ) 
 		{
-			if ( !m_pNetMonitor->AddRecv(pConnect->GetSocket()->GetSocket(), NULL, 0) ) return unconnect;
+			int64 connectId = pConnect->GetID();
+			if ( !m_pNetMonitor->AddRecv(pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) ) ) return unconnect;
 			return wait_recv;
 		}
 		nMaxRecvSize += nRecvLen;
@@ -245,20 +250,27 @@ SOCKET EpollFrame::ListenPort(int port)
 {
 #ifndef WIN32
 	Socket listenSock;//监听socket
-	if ( !listenSock.Init( Socket::tcp ) ) return INVALID_SOCKET;
+	if ( !listenSock.Init( Socket::tcp ) ) 
+	{
+		printf( "listen %d error not create socket\n", port );
+		return INVALID_SOCKET;
+	}
 	listenSock.SetSockMode();
 	if ( !listenSock.StartServer( port ) ) 
 	{
+		printf( "listen %d error port is using\n", port );
 		listenSock.Close();
 		return INVALID_SOCKET;
 	}
 	if ( !((EpollMonitor*)m_pNetMonitor)->AddConnectMonitor( listenSock.GetSocket() ) )
 	{
+		printf( "listen %d error AddConnectMonitor\n", port );
 		listenSock.Close();
 		return INVALID_SOCKET;
 	}
 	if ( !m_pNetMonitor->AddAccept( listenSock.GetSocket() ) ) 
 	{
+		printf( "listen %d error AddAccept\n", port );
 		listenSock.Close();
 		return INVALID_SOCKET;
 	}
@@ -266,14 +278,6 @@ SOCKET EpollFrame::ListenPort(int port)
 	return listenSock.Detach();
 #endif
 	return INVALID_SOCKET;
-}
-
-bool EpollFrame::MonitorConnect(NetConnect *pConnect)
-{
-#ifndef WIN32
-	return m_pNetMonitor->AddRecv( pConnect->GetSocket()->GetSocket(), NULL, 0 );
-#endif
-	return false;
 }
 
 connectState EpollFrame::SendData(NetConnect *pConnect, unsigned short uSize)
@@ -306,7 +310,7 @@ connectState EpollFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 			cs = wait_send;
 		}
 		nFinishedSize = pConnect->GetSocket()->Send((char*)buf, nSize);//发送
-		if ( -1 == nFinishedSize ) cs = unconnect;
+		if ( 0 > nFinishedSize ) cs = unconnect;
 		else
 		{
 			pConnect->m_sendBuffer.ReadData(buf, nFinishedSize);//将发送成功的数据从缓冲清除
@@ -330,7 +334,8 @@ connectState EpollFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 	*/
 	if ( !pConnect->SendStart() ) return cs;//已经在发送
 	//发送流程开始
-	if ( !m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), NULL, 0 ) ) cs = unconnect;
+	int64 connectId = pConnect->GetID();
+	if ( !m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) ) ) cs = unconnect;
 
 	return cs;
 #endif

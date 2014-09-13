@@ -42,16 +42,15 @@ void* IOCPFrame::NetMonitor( void* )
 		{
 		case IOCPMonitor::connect :
 			OnConnect( e->client, false );
-			m_pNetMonitor->AddAccept( e->sock );
 			break;
 		case IOCPMonitor::recv :
-			OnData( e->sock, e->pData, e->uDataSize );
+			OnData( e->connectId, e->pData, e->uDataSize );
 			break;
 		case IOCPMonitor::close :
-			OnClose( e->sock );
+			OnClose( e->connectId );
 			break;
 		case IOCPMonitor::send :
-			OnSend( e->sock, e->uDataSize );
+			OnSend( e->connectId, e->uDataSize );
 			break;
 		default:
 			break;
@@ -66,8 +65,12 @@ void* IOCPFrame::NetMonitor( void* )
 connectState IOCPFrame::RecvData( NetConnect *pConnect, char *pData, unsigned short uSize )
 {
 	pConnect->WriteFinished( uSize );
+	IOCP_DATA iocpData;
+	iocpData.connectId = pConnect->GetID();
+	iocpData.buf = (char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)); 
+	iocpData.bufSize = BUFBLOCK_SIZE; 
 	if ( !m_pNetMonitor->AddRecv(  pConnect->GetSocket()->GetSocket(), 
-		(char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)), BUFBLOCK_SIZE ) )
+		(char*)&iocpData, sizeof(IOCP_DATA) ) )
 	{
 		return unconnect;
 	}
@@ -77,47 +80,46 @@ connectState IOCPFrame::RecvData( NetConnect *pConnect, char *pData, unsigned sh
 
 connectState IOCPFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 {
-	try
+	unsigned char buf[BUFBLOCK_SIZE];
+	if ( uSize > 0 ) pConnect->m_sendBuffer.ReadData(buf, uSize);
+	int nLength = pConnect->m_sendBuffer.GetLength();
+	if ( 0 >= nLength ) 
 	{
-		unsigned char buf[BUFBLOCK_SIZE];
-		if ( uSize > 0 ) pConnect->m_sendBuffer.ReadData(buf, uSize);
-		int nLength = pConnect->m_sendBuffer.GetLength();
+		pConnect->SendEnd();//发送结束
+		nLength = pConnect->m_sendBuffer.GetLength();//第二次检查发送缓冲
 		if ( 0 >= nLength ) 
 		{
-			pConnect->SendEnd();//发送结束
-			nLength = pConnect->m_sendBuffer.GetLength();//第二次检查发送缓冲
-			if ( 0 >= nLength ) 
-			{
-				/*
-					情况1：外部发送线程未完成发送缓冲写入
-						外部线程完成写入时，不存在发送流程，单线程SendStart()必定成功
-						结论：不会漏发送
-					其它情况：不存在其它情况
-				*/
-				return ok;//没有待发送数据，退出发送线程
-			}
-			/*
-				外部发送线程已完成发送缓冲写入
-				多线程并发SendStart()，只有一个成功
-				结论：不会出现并发发送，也不会漏数据
+		/*
+		情况1：外部发送线程未完成发送缓冲写入
+		外部线程完成写入时，不存在发送流程，单线程SendStart()必定成功
+		结论：不会漏发送
+		其它情况：不存在其它情况
 			*/
-			if ( !pConnect->SendStart() ) return ok;//已经在发送
-			//发送流程开始
+			return ok;//没有待发送数据，退出发送线程
 		}
-
-		if ( nLength > BUFBLOCK_SIZE )
-		{
-			pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
-			m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, BUFBLOCK_SIZE );
-		}
-		else
-		{
-			pConnect->m_sendBuffer.ReadData(buf, nLength, false);
-			m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, nLength );
-		}
+		/*
+		外部发送线程已完成发送缓冲写入
+		多线程并发SendStart()，只有一个成功
+		结论：不会出现并发发送，也不会漏数据
+		*/
+		if ( !pConnect->SendStart() ) return ok;//已经在发送
+		//发送流程开始
 	}
-	catch(...)
+	
+	IOCP_DATA iocpData;
+	iocpData.connectId = pConnect->GetID();
+	iocpData.buf = (char*)buf; 
+	if ( nLength > BUFBLOCK_SIZE )
 	{
+		pConnect->m_sendBuffer.ReadData(buf, BUFBLOCK_SIZE, false);
+		iocpData.bufSize = BUFBLOCK_SIZE; 
+		m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)&iocpData, sizeof(IOCP_DATA) );
+	}
+	else
+	{
+		pConnect->m_sendBuffer.ReadData(buf, nLength, false);
+		iocpData.bufSize = nLength; 
+		m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)&iocpData, sizeof(IOCP_DATA) );
 	}
 	return ok;
 }
@@ -131,7 +133,7 @@ SOCKET IOCPFrame::ListenPort(int port)
 		listenSock.Close();
 		return INVALID_SOCKET;
 	}
-	if ( !m_pNetMonitor->AddMonitor( listenSock.GetSocket() ) ) 
+	if ( !m_pNetMonitor->AddMonitor( listenSock.GetSocket(), NULL, 0 ) ) 
 	{
 		listenSock.Close();
 		return INVALID_SOCKET;

@@ -38,6 +38,7 @@ NetEngine::NetEngine()
 	m_workThreadCount = 16;//工作线程数量
 	m_pNetServer = NULL;
 	m_averageConnectCount = 5000;
+	m_nextConnectId = 0;
 }
 
 NetEngine::~NetEngine()
@@ -316,8 +317,15 @@ bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 	pConnect->GetSocket()->SetSockMode();
 	//加入管理列表
 	AutoLock lock( &m_connectsMutex );
+	int64 connectId = -1;
+	while ( -1 == connectId )//跳过预留ID
+	{
+		connectId = m_nextConnectId;
+		m_nextConnectId++;
+	}
+	pConnect->SetID(connectId);
 	pConnect->RefreshHeart();
-	pair<ConnectList::iterator, bool> ret = m_connectList.insert( ConnectList::value_type(pConnect->GetSocket()->GetSocket(),pConnect) );
+	pair<ConnectList::iterator, bool> ret = m_connectList.insert( ConnectList::value_type(connectId,pConnect) );
 	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	lock.Unlock();
 	//执行业务
@@ -327,10 +335,11 @@ bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 
 void* NetEngine::ConnectWorker( NetConnect *pConnect )
 {
-	if ( !m_pNetMonitor->AddMonitor(pConnect->GetSocket()->GetSocket()) ) 
+	int64 connectId = pConnect->GetID();
+	if ( !m_pNetMonitor->AddMonitor(pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) ) ) 
 	{
 		AutoLock lock( &m_connectsMutex );
-		ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
+		ConnectList::iterator itNetConnect = m_connectList.find( connectId );
 		if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
 		CloseConnect( itNetConnect );
 		pConnect->Release();
@@ -358,24 +367,27 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 	if ( pConnect->m_bConnect )
 	{
 #ifdef WIN32
+		IOCP_DATA iocpData;
+		iocpData.connectId = connectId;
+		iocpData.buf = (char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)); 
+		iocpData.bufSize = BUFBLOCK_SIZE; 
 		if ( !m_pNetMonitor->AddRecv( 
 			pConnect->GetSocket()->GetSocket(), 
-			(char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)), 
-			BUFBLOCK_SIZE ) )
+			(char*)&iocpData, 
+			sizeof(IOCP_DATA) ) )
 		{
 			AutoLock lock( &m_connectsMutex );
-			ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
+			ConnectList::iterator itNetConnect = m_connectList.find( connectId );
 			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
 			CloseConnect( itNetConnect );
 		}
 #else
 		if ( !m_pNetMonitor->AddRecv( 
 			pConnect->GetSocket()->GetSocket(), 
-			NULL, 
-			0 ) )
+			(char*)&connectId, sizeof(int64) ) )
 		{
 			AutoLock lock( &m_connectsMutex );
-			ConnectList::iterator itNetConnect = m_connectList.find( pConnect->GetSocket()->GetSocket() );
+			ConnectList::iterator itNetConnect = m_connectList.find( connectId );
 			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
 			CloseConnect( itNetConnect );
 		}
@@ -385,10 +397,10 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 	return 0;
 }
 
-void NetEngine::OnClose( SOCKET sock )
+void NetEngine::OnClose( int64 connectId )
 {
 	AutoLock lock( &m_connectsMutex );
-	ConnectList::iterator itNetConnect = m_connectList.find(sock);
+	ConnectList::iterator itNetConnect = m_connectList.find(connectId);
 	if ( itNetConnect == m_connectList.end() )return;//底层已经主动断开
 	CloseConnect( itNetConnect );
 	lock.Unlock();
@@ -411,11 +423,11 @@ void* NetEngine::CloseWorker( NetConnect *pConnect )
 	return 0;
 }
 
-connectState NetEngine::OnData( SOCKET sock, char *pData, unsigned short uSize )
+connectState NetEngine::OnData( int64 connectId, char *pData, unsigned short uSize )
 {
 	connectState cs = unconnect;
 	AutoLock lock( &m_connectsMutex );
-	ConnectList::iterator itNetConnect = m_connectList.find(sock);//client列表里查找
+	ConnectList::iterator itNetConnect = m_connectList.find(connectId);//client列表里查找
 	if ( itNetConnect == m_connectList.end() ) return cs;//底层已经断开
 
 	NetConnect *pConnect = itNetConnect->second;
@@ -428,7 +440,7 @@ connectState NetEngine::OnData( SOCKET sock, char *pData, unsigned short uSize )
 		if ( unconnect == cs )
 		{
 			pConnect->Release();//使用完毕释放共享对象
-			OnClose( sock );
+			OnClose( connectId );
 			return cs;
 		}
 		/*
@@ -488,20 +500,20 @@ connectState NetEngine::RecvData( NetConnect *pConnect, char *pData, unsigned sh
 }
 
 //关闭一个连接
-void NetEngine::CloseConnect( SOCKET sock )
+void NetEngine::CloseConnect( int64 connectId )
 {
 	AutoLock lock( &m_connectsMutex );
-	ConnectList::iterator itNetConnect = m_connectList.find( sock );
+	ConnectList::iterator itNetConnect = m_connectList.find( connectId );
 	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
 	CloseConnect( itNetConnect );
 }
 
 //响应发送完成事件
-connectState NetEngine::OnSend( SOCKET sock, unsigned short uSize )
+connectState NetEngine::OnSend( int64 connectId, unsigned short uSize )
 {
 	connectState cs = unconnect;
 	AutoLock lock( &m_connectsMutex );
-	ConnectList::iterator itNetConnect = m_connectList.find(sock);
+	ConnectList::iterator itNetConnect = m_connectList.find(connectId);
 	if ( itNetConnect == m_connectList.end() )return cs;//底层已经主动断开
 	NetConnect *pConnect = itNetConnect->second;
 	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
@@ -686,7 +698,7 @@ bool NetEngine::ConnectAll()
 void NetEngine::SetServerClose(NetConnect *pConnect)
 {
 	if ( !pConnect->m_host.IsServer() ) return;
-	SOCKET sock = pConnect->GetID();
+	SOCKET sock = pConnect->GetSocket()->GetSocket();
 	AutoLock lock(&m_serListMutex);
 	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
 	int i = 0;

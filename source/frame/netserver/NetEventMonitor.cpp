@@ -25,7 +25,7 @@ bool NetEventMonitor::Stop()
 	return true;
 }
 
-bool NetEventMonitor::AddMonitor( SOCKET socket )
+bool NetEventMonitor::AddMonitor( SOCKET socket, char* pData, unsigned short dataSize )
 {
 	return true;
 }
@@ -45,12 +45,12 @@ bool NetEventMonitor::AddAccept(SOCKET socket)
 	return true;
 }
 
-bool NetEventMonitor::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize )
+bool NetEventMonitor::AddRecv( SOCKET socket, char* pData, unsigned short dataSize )
 {
 	return true;
 }
 
-bool NetEventMonitor::AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize )
+bool NetEventMonitor::AddSend( SOCKET socket, char* pData, unsigned short dataSize )
 {
 	return true;
 }

@@ -62,7 +62,7 @@ bool IOCPMonitor::Start( int nMaxMonitor )
 	return true;
 }
 
-bool IOCPMonitor::AddMonitor( SOCKET sock )
+bool IOCPMonitor::AddMonitor( SOCKET sock, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
 	//将监听套接字加入IOCP列队
@@ -87,8 +87,9 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 	*/
 	DWORD dwIOSize;
 	IOCP_OVERLAPPED *pOverlapped = NULL;//接收完成数据
+	SOCKET sock;
 	if ( !::GetQueuedCompletionStatus( m_hCompletPort, &dwIOSize, 
-						(LPDWORD)&events[count].sock, (OVERLAPPED**)&pOverlapped,
+						(LPDWORD)&sock, (OVERLAPPED**)&pOverlapped,
 						INFINITE ) )
 	{
 		DWORD dwErrorCode = GetLastError();
@@ -119,10 +120,11 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 		}
 		if ( IOCPMonitor::connect == pOverlapped->completiontype ) //Accept上的socket关闭，重新投递监听
 		{
-			AddAccept(events[count].sock);
+			AddAccept(sock);
 		}
 		else//客户端异常断开，拔网线，断电，终止进程
 		{
+			events[count].connectId = pOverlapped->connectId;
 			events[count].type = IOCPMonitor::close;
 			count++;
 		}
@@ -134,12 +136,18 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 	}
 	else if ( 0 == dwIOSize && IOCPMonitor::recv == pOverlapped->completiontype )
 	{
+		events[count].connectId = pOverlapped->connectId;
 		events[count].type = IOCPMonitor::close;
 		count++;
 	}
 	else//io事件
 	{
+		if ( IOCPMonitor::connect == pOverlapped->completiontype )
+		{
+			AddAccept( sock );
+		}
 		//io事件
+		events[count].connectId = pOverlapped->connectId;
 		events[count].type = pOverlapped->completiontype;
 		events[count].client = pOverlapped->sock;
 		events[count].pData = pOverlapped->m_wsaBuffer.buf;
@@ -194,15 +202,17 @@ bool IOCPMonitor::AddAccept( SOCKET listenSocket )
 }
 
 //增加一个接收数据的操作，有数据到达，WaitEvent会返回
-bool IOCPMonitor::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize )
+bool IOCPMonitor::AddRecv( SOCKET socket, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
+	IOCP_DATA *pIocpData = (IOCP_DATA *)pData;
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;
 	if ( NULL == pOverlapped )return false;
 	memset( &pOverlapped->m_overlapped, 0, sizeof(OVERLAPPED) );
-	pOverlapped->m_wsaBuffer.buf = recvBuf;
-	pOverlapped->m_wsaBuffer.len = bufSize;
+	pOverlapped->m_wsaBuffer.buf = pIocpData->buf;
+	pOverlapped->m_wsaBuffer.len = pIocpData->bufSize;
 	pOverlapped->m_overlapped.Internal = 0;
+	pOverlapped->connectId = pIocpData->connectId;
 	pOverlapped->sock = socket;
 	pOverlapped->completiontype = IOCPMonitor::recv;
 	
@@ -229,15 +239,17 @@ bool IOCPMonitor::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize 
 }
 
 //增加一个发送数据的操作，发送完成，WaitEvent会返回
-bool IOCPMonitor::AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize )
+bool IOCPMonitor::AddSend( SOCKET socket, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
+	IOCP_DATA *pIocpData = (IOCP_DATA *)pData;
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;
 	if ( NULL == pOverlapped ) return false;
 	memset( &pOverlapped->m_overlapped, 0, sizeof(OVERLAPPED) );
-	pOverlapped->m_wsaBuffer.buf = dataBuf;
-	pOverlapped->m_wsaBuffer.len = dataSize;
+	pOverlapped->m_wsaBuffer.buf = pIocpData->buf;
+	pOverlapped->m_wsaBuffer.len = pIocpData->bufSize;
 	pOverlapped->m_overlapped.Internal = 0;
+	pOverlapped->connectId = pIocpData->connectId;
 	pOverlapped->sock = socket;
 	pOverlapped->completiontype = IOCPMonitor::send;
 	

@@ -21,7 +21,7 @@ NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor
 	m_useCount = 1;
 	m_pEngine = pEngine;
 	m_pNetMonitor = pNetMonitor;
-	m_id = m_socket.GetSocket();
+	m_id = -1;
 	m_host.m_pConnect = this;
 	m_nReadCount = 0;
 	m_bReadAble = false;
@@ -70,6 +70,11 @@ void NetConnect::Release()
 	}
 }
 
+void NetConnect::SetID( int64 connectId )
+{
+	m_id = connectId;
+}
+
 void NetConnect::RefreshHeart()
 {
 	m_tLastHeart = time( NULL );
@@ -110,43 +115,46 @@ bool NetConnect::ReadData( unsigned char* pMsg, unsigned int uLength, bool bClea
 
 bool NetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 {
-	try
+	unsigned char *ioBuf = NULL;
+	int nSendSize = 0;
+	AutoLock lock(&m_sendMutex);//回复与主动通知存在并发send
+	if ( 0 >= m_sendBuffer.GetLength() )//没有等待发送的数据，可直接发送
 	{
-		unsigned char *ioBuf = NULL;
-		int nSendSize = 0;
-		AutoLock lock(&m_sendMutex);//回复与主动通知存在并发send
-		if ( 0 >= m_sendBuffer.GetLength() )//没有等待发送的数据，可直接发送
-		{
-			nSendSize = m_socket.Send( pMsg, uLength );
-		}
-		if ( -1 == nSendSize ) return false;//发生错误，连接可能已断开
-		if ( uLength == nSendSize ) return true;//所有数据已发送，返回成功
-		
-		//数据加入发送缓冲，交给底层去发送
-		uLength -= nSendSize;
-		while ( true )
-		{
-			if ( uLength > BUFBLOCK_SIZE )
-			{
-				ioBuf = m_sendBuffer.PrepareBuffer( BUFBLOCK_SIZE );
-				memcpy( ioBuf, &pMsg[nSendSize], BUFBLOCK_SIZE );
-				m_sendBuffer.WriteFinished( BUFBLOCK_SIZE );
-				nSendSize += BUFBLOCK_SIZE;
-				uLength -= BUFBLOCK_SIZE;
-			}
-			else
-			{
-				ioBuf = m_sendBuffer.PrepareBuffer( uLength );
-				memcpy( ioBuf, &pMsg[nSendSize], uLength );
-				m_sendBuffer.WriteFinished( uLength );
-				break;
-			}
-		}
-		if ( !SendStart() ) return true;//已经在发送
-		//发送流程开始
-		return m_pNetMonitor->AddSend( m_socket.GetSocket(), NULL, 0 );
+		nSendSize = m_socket.Send( pMsg, uLength );
 	}
-	catch(...){}
+	if ( -1 == nSendSize ) return false;//发生错误，连接可能已断开
+	if ( uLength == nSendSize ) return true;//所有数据已发送，返回成功
+	
+	//数据加入发送缓冲，交给底层去发送
+	uLength -= nSendSize;
+	while ( true )
+	{
+		if ( uLength > BUFBLOCK_SIZE )
+		{
+			ioBuf = m_sendBuffer.PrepareBuffer( BUFBLOCK_SIZE );
+			memcpy( ioBuf, &pMsg[nSendSize], BUFBLOCK_SIZE );
+			m_sendBuffer.WriteFinished( BUFBLOCK_SIZE );
+			nSendSize += BUFBLOCK_SIZE;
+			uLength -= BUFBLOCK_SIZE;
+		}
+		else
+		{
+			ioBuf = m_sendBuffer.PrepareBuffer( uLength );
+			memcpy( ioBuf, &pMsg[nSendSize], uLength );
+			m_sendBuffer.WriteFinished( uLength );
+			break;
+		}
+	}
+	if ( !SendStart() ) return true;//已经在发送
+#ifdef WIN32
+	IOCP_DATA iocpData;
+	iocpData.connectId = m_id;
+	iocpData.buf = NULL; 
+	iocpData.bufSize = 0;
+	return m_pNetMonitor->AddSend( m_socket.GetSocket(), (char*)&iocpData, sizeof(IOCP_DATA) );
+#else
+	return m_pNetMonitor->AddSend( m_socket.GetSocket(), (char*)&m_id, sizeof(int) );
+#endif
 	return true;
 }
 
@@ -155,7 +163,7 @@ Socket* NetConnect::GetSocket()
 	return &m_socket;
 }
 
-int NetConnect::GetID()
+int64 NetConnect::GetID()
 {
 	return m_id;
 }

@@ -24,7 +24,7 @@ class NetHost;
 class NetEventMonitor;
 class NetServer;
 class MemoryPool;
-typedef std::map<SOCKET,NetConnect*> ConnectList;
+typedef std::map<int64,NetConnect*> ConnectList;
 /**
  * 服务器通信引擎类
  * 通信层对象类型
@@ -108,12 +108,12 @@ protected:
 	bool OnConnect( SOCKET sock, bool isConnectServer );
 	void* RemoteCall ConnectWorker( NetConnect *pConnect );//业务层处理连接
 	//响应关闭事件，sock为关闭的套接字
-	void OnClose( SOCKET sock );
+	void OnClose( int64 connectId );
 	void NotifyOnClose(NetConnect *pConnect);//发出OnClose通知
 	void* RemoteCall CloseWorker( NetConnect *pConnect );//业务层处理关闭
 	void* RemoteCall ConnectFailed( NetEngine::SVR_CONNECT *pSvr );//业务层处理主动向外链接失败
 	//响应数据到达事件，sock为有数据到达的套接字
-	connectState OnData( SOCKET sock, char *pData, unsigned short uSize );
+	connectState OnData( int64 connectId, char *pData, unsigned short uSize );
 	/*
 		接收数据
 		返回连接状态
@@ -121,7 +121,7 @@ protected:
 	*/
 	virtual connectState RecvData( NetConnect *pConnect, char *pData, unsigned short uSize );
 	void* RemoteCall MsgWorker( NetConnect *pConnect );//业务层处理消息
-	connectState OnSend( SOCKET sock, unsigned short uSize );//响应发送事件
+	connectState OnSend( int64 connectId, unsigned short uSize );//响应发送事件
 	virtual connectState SendData(NetConnect *pConnect, unsigned short uSize);//发送数据
 	virtual SOCKET ListenPort(int port);//监听一个端口,返回创建的套接字
 	//向某组连接广播消息(业务层接口)
@@ -184,7 +184,7 @@ public:
 	//等待停止
 	void WaitStop();
 	//关闭一个网络对象,通信层发现网络对象关闭连接时，派生类调用接口
-	void CloseConnect( SOCKET sock );
+	void CloseConnect( int64 connectId );
 	//监听一个端口
 	bool Listen( int port );
 	/*
@@ -196,6 +196,7 @@ public:
 	int m_hEPoll;
 	epoll_event *m_events;
 #endif
+	int64 m_nextConnectId;
 };
 
 }  // namespace mdk

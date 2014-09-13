@@ -34,7 +34,7 @@ $(shell mkdir $(OUTPUT_DIR))
 CPP_DIR=
 
 #mdk安装目录
-MDK_HOME=/mnt/HYLib/mdk
+MDK_HOME=..
 
 #.h目录
 H_DIR=$(MDK_HOME)/include
@@ -54,7 +54,7 @@ INCLUDE = -I. -I../include -I$(H_DIR)
 
 #库目录，库文件:-L 目录 -库名
 #SYSLIB = -lnsl -lc -lm -lpthread -lstdc++ 
-LIB = -lnsl -lc -lm -lpthread -lstdc++ 
+LIB = -lnsl -lc -lm -lpthread -lrt -lstdc++ 
 
 #静态库：.a文件路径名
 LIB += $(MDK_HOME)/lib/mdk.a 

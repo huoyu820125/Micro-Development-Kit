@@ -55,7 +55,8 @@ public:
 	 *	另外也统一了IOCP与EPOLL的数据写入方式
 	 */
 
-	int GetID();//取得ID
+	void SetID( int64 connectId );
+	int64 GetID();//取得ID
 	Socket* GetSocket();//取得套接字
 	bool IsReadAble();//可读
 	uint32 GetLength();//取得数据长度
@@ -107,7 +108,7 @@ private:
 	Socket m_socket;//socket指针，用于调用网络操作
 	NetEventMonitor *m_pNetMonitor;//底层投递操作接口
 	NetEngine *m_pEngine;//用于关闭连接
-	int m_id;
+	int64 m_id;
 	NetHost m_host;
 	time_t m_tLastHeart;//最后一次收到心跳时间
 	bool m_bIsServer;//主机类型服务器

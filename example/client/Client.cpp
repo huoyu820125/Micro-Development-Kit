@@ -1,7 +1,7 @@
 // SerMain.cpp : Defines the entry point for the console application.
 //
 
-#include "../../include/mdk/Socket.h"
+#include "Socket.h"
 using namespace mdk;
 
 #include <map>

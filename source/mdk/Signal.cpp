@@ -4,6 +4,7 @@
 
 #include "../../include/mdk/Signal.h"
 #include "../../include/mdk/atom.h"
+#include <ctime>
 
 namespace mdk
 {

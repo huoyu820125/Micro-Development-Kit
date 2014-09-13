@@ -43,21 +43,21 @@ public:
 	//增加一个Accept操作，有新连接产生
 	bool AddAccept( SOCKET sock );
 	//增加一个接收数据的操作，有数据到达
-	bool AddRecv( SOCKET sock, char* recvBuf, unsigned short bufSize );
+	bool AddRecv( SOCKET sock, char* pData, unsigned short dataSize );
 	//增加一个发送数据的操作，发送完成
-	bool AddSend( SOCKET sock, char* dataBuf, unsigned short dataSize );
+	bool AddSend( SOCKET sock, char* pData, unsigned short dataSize );
 	//等待事件发生
 	//删除一个监听对象从监听列表
 	bool DelMonitor( SOCKET sock );
-	bool AddMonitor( SOCKET sock );
+	bool AddMonitor( SOCKET sock, char* pData, unsigned short dataSize );
 	
 	bool AddConnectMonitor( SOCKET sock );
-	bool AddDataMonitor( SOCKET sock );
-	bool AddSendableMonitor( SOCKET sock );
+	bool AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize );
+	bool AddSendableMonitor( SOCKET sock, char* pData, unsigned short dataSize );
 	bool WaitConnect( void *eventArray, int &count, int timeout );
 	bool WaitData( void *eventArray, int &count, int timeout );
 	bool WaitSendable( void *eventArray, int &count, int timeout );
-	bool IsStop( SOCKET sock );
+	bool IsStop( int64 connectId );
 
 protected:
 	void SheildSigPipe();//屏蔽SIGPIPE信号，避免进程被该信号关闭

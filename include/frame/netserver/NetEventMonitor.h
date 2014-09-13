@@ -6,11 +6,19 @@
 #define MDK_NETEVENTMONITOR_H
 
 #include "../../../include/mdk/Socket.h"
+#include "../../../include/mdk/FixLengthInt.h"
 #include <string>
 #define MAXPOLLSIZE 20000 //最大socket数
 
 namespace mdk
 {
+
+typedef struct IOCP_DATA
+{
+	int64 connectId;
+	char *buf;
+	unsigned short bufSize;
+}IOCP_DATA;
 
 class NetEventMonitor
 {
@@ -24,16 +32,16 @@ public:
 	//停止监听
 	virtual bool Stop();
 	//增加一个监听对象到监听列表
-	virtual bool AddMonitor( SOCKET socket );
+	virtual bool AddMonitor( SOCKET socket, char* pData, unsigned short dataSize );
 	//等待事件发生
 	virtual bool WaitEvent( void *eventArray, int &count, bool block );
 
 	//增加一个接受连接的操作，有连接进来，WaitEvent会返回
 	virtual bool AddAccept(SOCKET socket);
 	//增加一个接收数据的操作，有数据到达，WaitEvent会返回
-	virtual bool AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize );
+	virtual bool AddRecv( SOCKET socket, char* pData, unsigned short dataSize );
 	//增加一个发送数据的操作，发送完成，WaitEvent会返回
-	virtual bool AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize );
+	virtual bool AddSend( SOCKET socket, char* pData, unsigned short dataSize );
 
 	//删除一个监听对象从监听列表
 	virtual bool DelMonitor( SOCKET socket );
