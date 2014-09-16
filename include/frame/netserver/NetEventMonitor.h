@@ -33,6 +33,9 @@ public:
 	virtual bool Stop();
 	//增加一个监听对象到监听列表
 	virtual bool AddMonitor( SOCKET socket, char* pData, unsigned short dataSize );
+	virtual bool AddConnectMonitor( SOCKET sock );
+	virtual bool AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize );
+	virtual bool AddSendableMonitor( SOCKET sock, char* pData, unsigned short dataSize );
 	//等待事件发生
 	virtual bool WaitEvent( void *eventArray, int &count, bool block );
 

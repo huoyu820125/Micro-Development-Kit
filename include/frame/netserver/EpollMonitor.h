@@ -49,7 +49,6 @@ public:
 	//等待事件发生
 	//删除一个监听对象从监听列表
 	bool DelMonitor( SOCKET sock );
-	bool AddMonitor( SOCKET sock, char* pData, unsigned short dataSize );
 	
 	bool AddConnectMonitor( SOCKET sock );
 	bool AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize );

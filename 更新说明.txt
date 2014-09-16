@@ -1,4 +1,6 @@
-V1.79(2014-09-13 18:09)
-HostID变成一个自增的int64值与SOCKET句柄无关
-	id范围??兆，链接??多兆亿之后，id将转一圈回来，需要时间大约几十年
-	所以当某个链接持续几十年在线的极端情况下，才可能导致2个链接ID相同
+V1.80(2014-09-16 09:51)
+1.linux下将一个链接加入epoll监听时，存在重复投递的问题，onconnect()前AddMonitor()中对send recv的epoll句柄都投递了1次空的oneshot，算是加入到epoll监听队列，以后都是epoll_mod操作，如果这时网络异常，就会唤醒一个epoll_wait()线程，
+onconnect之后又对recv的epoll投递了oneshot｜epollin和oneshot｜epollout，又回唤醒1个epoll_wait()线程，这是不安全的
+
+
+修正后，不再投递空的oneshot，直接投递oneshot|epollIn到send监听句柄，等onconnect完成投递oneshot|epollin到recv监听句柄，收发上都只投递1次.避免重复唤醒多个epoll_wait线程被唤醒，导致单链接上并发io

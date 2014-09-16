@@ -30,6 +30,21 @@ bool NetEventMonitor::AddMonitor( SOCKET socket, char* pData, unsigned short dat
 	return true;
 }
 
+bool NetEventMonitor::AddConnectMonitor( SOCKET sock )
+{
+	return false;
+}
+
+bool NetEventMonitor::AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+{
+	return false;
+}
+
+bool NetEventMonitor::AddSendableMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+{
+	return false;
+}
+
 bool NetEventMonitor::DelMonitor( SOCKET socket )
 {
 	return true;

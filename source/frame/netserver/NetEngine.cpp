@@ -336,7 +336,14 @@ bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 void* NetEngine::ConnectWorker( NetConnect *pConnect )
 {
 	int64 connectId = pConnect->GetID();
-	if ( !m_pNetMonitor->AddMonitor(pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) ) ) 
+	bool successed;
+#ifdef WIN32
+	successed = m_pNetMonitor->AddMonitor(pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) );
+#else
+	pConnect->SendStart();
+	successed = m_pNetMonitor->AddSendableMonitor(pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) );
+#endif
+	if ( !successed )
 	{
 		AutoLock lock( &m_connectsMutex );
 		ConnectList::iterator itNetConnect = m_connectList.find( connectId );
@@ -345,6 +352,7 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 		pConnect->Release();
 		return 0;
 	}
+
 	m_pNetServer->OnConnect( pConnect->m_host );
 	/*
 		监听连接
@@ -371,27 +379,17 @@ void* NetEngine::ConnectWorker( NetConnect *pConnect )
 		iocpData.connectId = connectId;
 		iocpData.buf = (char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)); 
 		iocpData.bufSize = BUFBLOCK_SIZE; 
-		if ( !m_pNetMonitor->AddRecv( 
-			pConnect->GetSocket()->GetSocket(), 
-			(char*)&iocpData, 
-			sizeof(IOCP_DATA) ) )
-		{
-			AutoLock lock( &m_connectsMutex );
-			ConnectList::iterator itNetConnect = m_connectList.find( connectId );
-			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
-			CloseConnect( itNetConnect );
-		}
+		successed = m_pNetMonitor->AddRecv( pConnect->GetSocket()->GetSocket(), (char*)&iocpData, sizeof(IOCP_DATA) );
 #else
-		if ( !m_pNetMonitor->AddRecv( 
-			pConnect->GetSocket()->GetSocket(), 
-			(char*)&connectId, sizeof(int64) ) )
+		successed = m_pNetMonitor->AddDataMonitor( pConnect->GetSocket()->GetSocket(), (char*)&connectId, sizeof(int64) );
+#endif
+		if ( !successed )
 		{
 			AutoLock lock( &m_connectsMutex );
 			ConnectList::iterator itNetConnect = m_connectList.find( connectId );
 			if ( itNetConnect == m_connectList.end() ) return 0;//底层已经主动断开
 			CloseConnect( itNetConnect );
 		}
-#endif
 	}
 	pConnect->Release();
 	return 0;

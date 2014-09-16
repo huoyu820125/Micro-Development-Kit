@@ -141,15 +141,6 @@ bool EpollMonitor::DelMonitorOut( SOCKET sock )
 	return true;
 }
 
-bool EpollMonitor::AddMonitor( SOCKET sock, char* pData, unsigned short dataSize )
-{
-#ifndef WIN32
-	if ( !AddDataMonitor(sock, pData, dataSize) ) return false;
-	if ( !AddSendableMonitor(sock, pData, dataSize) ) return false;
-#endif	
-	return true;
-}
-
 bool EpollMonitor::AddConnectMonitor( SOCKET sock )
 {
 #ifndef WIN32
@@ -167,7 +158,7 @@ bool EpollMonitor::AddDataMonitor( SOCKET sock, char* pData, unsigned short data
 	int64 connectId = 0;
 	memcpy((char*)(&connectId), pData, dataSize);
 	epoll_event ev;
-	ev.events = EPOLLONESHOT;
+	ev.events = EPOLLONESHOT|EPOLLIN;
 	ev.data.u64 = connectId;
 	if ( epoll_ctl(m_hEPollIn, EPOLL_CTL_ADD, sock, &ev) < 0 ) return false;
 #endif	
@@ -180,7 +171,7 @@ bool EpollMonitor::AddSendableMonitor( SOCKET sock, char* pData, unsigned short 
 	int64 connectId = 0;
 	memcpy((char*)(&connectId), pData, dataSize);
 	epoll_event ev;
-	ev.events = EPOLLONESHOT;
+	ev.events = EPOLLONESHOT|EPOLLOUT;
 	ev.data.u64 = connectId;
 	if ( epoll_ctl(m_hEPollOut, EPOLL_CTL_ADD, sock, &ev) < 0 ) return false;
 #endif	
