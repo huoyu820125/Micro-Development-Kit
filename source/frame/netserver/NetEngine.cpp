@@ -747,7 +747,7 @@ void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsig
 }
 
 //向某主机发送消息(业务层接口)
-void NetEngine::SendMsg( int hostID, char *msg, unsigned int msgsize )
+void NetEngine::SendMsg( int64 hostID, char *msg, unsigned int msgsize )
 {
 	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(hostID);

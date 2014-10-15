@@ -162,11 +162,11 @@ public:
 		SendMsg()内部先在连接列表中，加锁查找对象，然后还是调用NetHost::Send()发送消息
 		在已经得到NetHost对象的情况下，直接NetHost::Send()效率最高，且不存在锁竞争。
 	 */
-	void SendMsg( int hostID, char *msg, unsigned int msgsize );
+	void SendMsg( int64 hostID, char *msg, unsigned int msgsize );
 	/*
 	 	关闭与主机的连接
 	 */
-	void CloseConnect( int hostID );
+	void CloseConnect( int64 hostID );
 };
 
 }  // namespace mdk

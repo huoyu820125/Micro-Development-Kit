@@ -115,7 +115,7 @@ void NetServer::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsig
 }
 
 //向某主机发送消息
-void NetServer::SendMsg( int hostID, char *msg, unsigned int msgsize )
+void NetServer::SendMsg( int64 hostID, char *msg, unsigned int msgsize )
 {
 	m_pNetCard->SendMsg(hostID, msg, msgsize);
 }
@@ -123,7 +123,7 @@ void NetServer::SendMsg( int hostID, char *msg, unsigned int msgsize )
 /*
 	关闭与主机的连接
  */
-void NetServer::CloseConnect( int hostID )
+void NetServer::CloseConnect( int64 hostID )
 {
 	m_pNetCard->CloseConnect( hostID );
 }

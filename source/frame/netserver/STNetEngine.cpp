@@ -339,10 +339,8 @@ void STNetEngine::NotifyOnClose(STNetConnect *pConnect)
 	}
 }
 
-int g_c = 0;
 bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 {
-	AtomAdd(&g_c, 1);
 	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, isConnectServer, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
