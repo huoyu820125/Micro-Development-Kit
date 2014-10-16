@@ -115,9 +115,9 @@ void NetServer::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsig
 }
 
 //向某主机发送消息
-void NetServer::SendMsg( int64 hostID, char *msg, unsigned int msgsize )
+bool NetServer::SendMsg( int64 hostID, char *msg, unsigned int msgsize )
 {
-	m_pNetCard->SendMsg(hostID, msg, msgsize);
+	return m_pNetCard->SendMsg(hostID, msg, msgsize);
 }
 
 /*

@@ -747,18 +747,19 @@ void NetEngine::BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsig
 }
 
 //向某主机发送消息(业务层接口)
-void NetEngine::SendMsg( int64 hostID, char *msg, unsigned int msgsize )
+bool NetEngine::SendMsg( int64 hostID, char *msg, unsigned int msgsize )
 {
 	AutoLock lock( &m_connectsMutex );
 	ConnectList::iterator itNetConnect = m_connectList.find(hostID);
-	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
+	if ( itNetConnect == m_connectList.end() ) return false;//底层已经主动断开
 	NetConnect *pConnect = itNetConnect->second;
 	AtomAdd(&pConnect->m_useCount, 1);//业务层先获取访问
 	lock.Unlock();
-	if ( pConnect->m_bConnect ) pConnect->SendData((const unsigned char*)msg,msgsize);
+	bool ret = false;
+	if ( pConnect->m_bConnect ) ret = pConnect->SendData((const unsigned char*)msg,msgsize);
 	pConnect->Release();//使用完毕释放共享对象
 
-	return;
+	return ret;
 }
 
 const char* NetEngine::GetInitError()//取得启动错误信息
