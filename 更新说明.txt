@@ -1,2 +1,2 @@
-V1.82(2014-10-16 17:06)
-NetServer::SendMsg增加bool类型返回值,判断结果
+V1.83(2014-10-21 18:42)
+linux下Logger类删除过期日志遍历文件夹时opendir()后没有closedir()释放句柄,导致日志一段时间后opendir()返回null,造成崩溃

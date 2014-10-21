@@ -16,6 +16,7 @@
 #include   <unistd.h>                     //chdir() 
 #include   <sys/stat.h>                 //mkdir() 
 #include   <sys/types.h>               //mkdir() 
+#include   <dirent.h>					//closedir()
 #endif
 
 namespace mdk
@@ -231,7 +232,6 @@ void Logger::FindDelLog(char * path, int maxExistDay)
 #else
 	DIR              *pDir ;  
 	struct dirent    *ent  ;  
-	int               i=0  ;  
 	char              childpath[512];  
 	pDir = opendir( path );  
 	memset( childpath, 0, sizeof(childpath) );  
@@ -252,6 +252,7 @@ void Logger::FindDelLog(char * path, int maxExistDay)
 			remove( strRunLog.c_str() );
 		}
 	}  
+	closedir(pDir);
 #endif
 
 }
