@@ -1,2 +1,7 @@
-V1.83(2014-10-21 18:42)
-linux下Logger类删除过期日志遍历文件夹时opendir()后没有closedir()释放句柄,导致日志一段时间后opendir()返回null,造成崩溃
+V1.84(2014-11-6 18:07)
+1.在OnConnect OnMsg OnClose中需要调用rand()时，需要在每个线程启动时调用srand(time(NULL)),否则都将是伪随机，因
+为srand函数只能影响调用线程，比如线程A调用了srand，影响不了线程B中的rand结果。
+为了实现类似需求，让用户在每个工作线程启动时有机会调用一下srand()
+NetServer增加SetOnWorkStart()接口
+ThreadPool增加SetOnStart()接口
+

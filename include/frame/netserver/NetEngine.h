@@ -174,6 +174,9 @@ public:
 	void SetIOThreadCount(int nCount);
 	//设置工作线程数
 	void SetWorkThreadCount(int nCount);
+	//设置工作线程启动回调函数
+	void SetOnWorkStart( MethodPointer method, void *pObj, void *pParam );
+	void SetOnWorkStart( FuntionPointer fun, void *pParam );
 	/**
 	 * 开始
 	 * 成功返回true，失败返回false

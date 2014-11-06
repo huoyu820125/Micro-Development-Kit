@@ -30,6 +30,15 @@ void* NetServer::TMain(void* pParam)
 	return 0;
 }
 
+void NetServer::SetOnWorkStart( MethodPointer method, void *pObj, void *pParam )
+{
+	m_pNetCard->SetOnWorkStart(method, pObj, pParam);
+}
+
+void NetServer::SetOnWorkStart( FuntionPointer fun, void *pParam )
+{
+	m_pNetCard->SetOnWorkStart(fun, pParam);
+}
 /**
  * 客户接口，对所有可见
  * 运行服务器

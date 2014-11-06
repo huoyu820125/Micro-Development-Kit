@@ -76,6 +76,16 @@ void NetEngine::SetWorkThreadCount(int nCount)
 	m_workThreadCount = nCount;//工作线程数量
 }
 
+void NetEngine::SetOnWorkStart( MethodPointer method, void *pObj, void *pParam )
+{
+	m_workThreads.SetOnStart(method, pObj, pParam);
+}
+
+void NetEngine::SetOnWorkStart( FuntionPointer fun, void *pParam )
+{
+	m_workThreads.SetOnStart(fun, pParam);
+}
+
 /**
  * 开始引擎
  * 成功返回true，失败返回false

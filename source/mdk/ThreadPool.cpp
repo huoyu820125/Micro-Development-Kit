@@ -30,6 +30,16 @@ ThreadPool::~ThreadPool()
 	}
 }
  
+void ThreadPool::SetOnStart( MethodPointer method, void *pObj, void *pParam )
+{
+	m_taskOnStart.Accept(method, pObj, pParam);
+}
+
+void ThreadPool::SetOnStart( FuntionPointer fun, void *pParam )
+{
+	m_taskOnStart.Accept(fun, pParam);
+}
+
 bool ThreadPool::Start( int nMinThreadNum )
 {
 	m_nMinThreadNum = nMinThreadNum;
@@ -144,6 +154,7 @@ Task* ThreadPool::PullTask()
 
 void* ThreadPool::ThreadFunc(void* pParam)
 {
+	m_taskOnStart.Execute();
 	THREAD_CONTEXT *pContext = (THREAD_CONTEXT*)pParam;
 	Task *pTask = NULL;
 	while ( pContext->bRun )

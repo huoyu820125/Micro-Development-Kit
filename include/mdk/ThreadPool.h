@@ -44,6 +44,8 @@ class ThreadPool
 public:
 	ThreadPool();
 	~ThreadPool();
+	void SetOnStart( MethodPointer method, void *pObj, void *pParam );
+	void SetOnStart( FuntionPointer fun, void *pParam );
 	bool Start(int nMinThreadNum);//启动线程池
 	void Stop();//关闭所有线程
 	//接受任务
@@ -79,8 +81,7 @@ protected:
 	std::vector<Task*> m_tasks;//任务表
 	Mutex m_tasksMutex;//任务表线程安全锁
 	Signal m_sigNewTask;//新任务信号
-
-	
+	Task m_taskOnStart;//开始响应
 };
 
 }//namespace mdk
