@@ -211,7 +211,7 @@ SYS_gettid与__NR_gettid是相等的常量
 #define gettid() syscall(__NR_gettid)
 #endif
 
-unsigned int CurThreadId()
+uint64 CurThreadId()
 {
 #ifdef WIN32
 	return GetCurrentThreadId();
