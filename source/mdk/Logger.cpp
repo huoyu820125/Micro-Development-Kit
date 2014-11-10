@@ -285,7 +285,7 @@ bool Logger::Info( const char *findKey, const char *format, ... )
 	char strTime[32];
 	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
 	//写入日志内容
-	fprintf( m_fpRunLog, "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
+	fprintf( m_fpRunLog, "%s Tid:%llu [%s] ", strTime, CurThreadId(), findKey );
 	va_list ap;
 	va_start( ap, format );
 	vfprintf( m_fpRunLog, format, ap );
@@ -300,7 +300,7 @@ bool Logger::Info( const char *findKey, const char *format, ... )
 	//打印日志内容
 	if ( m_bPrint ) 
 	{
-		printf( "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
+		printf( "%s Tid:%llu [%s] ", strTime, CurThreadId(), findKey );
 		va_list ap;
 		va_start( ap, format );
 		vprintf( format, ap );
@@ -329,7 +329,7 @@ bool Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, c
 	char strTime[32];
 	strftime( strTime, 30, "%Y-%m-%d %H:%M:%S", pCurTM );
 	//写入日志内容
-	fprintf( m_fpRunLog, "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
+	fprintf( m_fpRunLog, "%s Tid:%llu [%s] ", strTime, CurThreadId(), findKey );
 	va_list ap;
 	va_start( ap, format );
 	vfprintf( m_fpRunLog, format, ap );
@@ -338,7 +338,7 @@ bool Logger::StreamInfo( const char *findKey, unsigned char *stream, int nLen, c
 	//打印日志内容
 	if ( m_bPrint ) 
 	{
-		printf( "%s Tid:%d [%s] ", strTime, CurThreadId(), findKey );
+		printf( "%s Tid:%llu [%s] ", strTime, CurThreadId(), findKey );
 		va_list ap;
 		va_start( ap, format );
 		vprintf( format, ap );
