@@ -87,7 +87,7 @@ int STEpoll::WaitEvent( int timeout )
 	int count;
 	while ( true )
 	{
-		count == epoll_wait(m_hEpoll, m_events, m_nMaxMonitor, timeout );
+		count = epoll_wait(m_hEpoll, m_events, m_nMaxMonitor, timeout );
 		if ( -1 == count ) 
 		{
 			if ( EINTR == errno ) continue;

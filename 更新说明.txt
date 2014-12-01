@@ -1,2 +1,2 @@
-V1.86(2014-11-10 14:33)
-1.由于CurThreadId()修正为了uint64,所以相应Logger打印线程ID的转移符号也修正为%llu
+V1.87(2014-12-01 13:20)
+1.ST版STEpoll::WaitEvent() = 手误写成==,修正
