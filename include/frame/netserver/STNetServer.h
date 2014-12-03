@@ -101,6 +101,8 @@ public:
 	//设置自动重连时间,最小10s，不设置则，或设置小于等于0，服务器不重连
 	//设置心跳时间,最小10s，不设置则，或设置小于等于0，服务器不检查心跳
 	void SetHeartTime( int nSecond );
+	//打开TCP_NODELAY模式（高吞吐）
+	void OpenNoDelay();
 	//监听某个端口，可多次调用监听多个端口
 	bool Listen(int port);
 	//异步连接外部服务器，可多次调用连接多个外部服务器

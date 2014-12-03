@@ -161,6 +161,8 @@ public:
 	void SetAverageConnectCount(int count);
 	//设置心跳时间
 	void SetHeartTime( int nSecond );
+	//打开TCP_NODELAY
+	void OpenNoDelay();
 	/**
 	 * 开始
 	 * 成功返回true，失败返回false
@@ -184,6 +186,7 @@ public:
 	int m_hEPoll;
 	epoll_event *m_events;
 #endif
+	bool m_noDelay;//开启TCP_NODELAY
 };
 
 }  // namespace mdk

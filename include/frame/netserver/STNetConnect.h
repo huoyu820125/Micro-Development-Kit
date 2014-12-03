@@ -6,7 +6,6 @@
 #define MDK_STNETCONNECT_H
 
 #include "STNetHost.h"
-#include "../../../include/mdk/Lock.h"
 #include "../../../include/mdk/IOBuffer.h"
 #include "../../../include/mdk/Socket.h"
 
@@ -89,7 +88,6 @@ public:
 	IOBuffer m_sendBuffer;//发送缓冲
 	int m_nSendCount;//正在进行发送的线程数
 	bool m_bSendAble;//io缓冲中有数据需要发送
-	Mutex m_sendMutex;//发送操作并发锁
 	
 	Socket m_socket;//socket指针，用于调用网络操作
 	NetEventMonitor *m_pNetMonitor;//底层投递操作接口

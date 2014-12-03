@@ -103,49 +103,44 @@ bool STNetConnect::ReadData( unsigned char* pMsg, unsigned int uLength, bool bCl
 
 bool STNetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 {
-	try
+	unsigned char *ioBuf = NULL;
+	uint32 nSendSize = 0;
+	if ( 0 >= m_sendBuffer.GetLength() )//没有等待发送的数据，可直接发送
 	{
-		unsigned char *ioBuf = NULL;
-		uint32 nSendSize = 0;
-		AutoLock lock(&m_sendMutex);//回复与主动通知存在并发send
-		if ( 0 >= m_sendBuffer.GetLength() )//没有等待发送的数据，可直接发送
-		{
-			nSendSize = m_socket.Send( pMsg, uLength );
-		}
-		if ( -1 == nSendSize ) return false;//发生错误，连接可能已断开
-		if ( uLength == nSendSize ) return true;//所有数据已发送，返回成功
-		
-		//数据加入发送缓冲，交给底层去发送
-		uLength -= nSendSize;
-		while ( true )
-		{
-			if ( uLength > BUFBLOCK_SIZE )
-			{
-				ioBuf = m_sendBuffer.PrepareBuffer( BUFBLOCK_SIZE );
-				memcpy( ioBuf, &pMsg[nSendSize], BUFBLOCK_SIZE );
-				m_sendBuffer.WriteFinished( BUFBLOCK_SIZE );
-				nSendSize += BUFBLOCK_SIZE;
-				uLength -= BUFBLOCK_SIZE;
-			}
-			else
-			{
-				ioBuf = m_sendBuffer.PrepareBuffer( uLength );
-				memcpy( ioBuf, &pMsg[nSendSize], uLength );
-				m_sendBuffer.WriteFinished( uLength );
-				break;
-			}
-		}
-		if ( !SendStart() ) return true;//已经在发送
-		//发送流程开始
-#ifdef WIN32
-		m_pNetMonitor->AddSend( m_socket.GetSocket(), NULL, 0 );
-#else
-		//在STNetEngine::MsgWorker()中执行，一定是在RecvData()之后，所以绝对不会被
-		//m_pNetMonitor->AddIO( m_socket.GetSocket(), true, false );覆盖，不会遗漏发送请求
-		((STEpoll*)m_pNetMonitor)->AddIO( m_socket.GetSocket(), true, true );
-#endif
+		nSendSize = m_socket.Send( pMsg, uLength );
 	}
-	catch(...){}
+	if ( -1 == nSendSize ) return false;//发生错误，连接可能已断开
+	if ( uLength == nSendSize ) return true;//所有数据已发送，返回成功
+
+	//数据加入发送缓冲，交给底层去发送
+	uLength -= nSendSize;
+	while ( true )
+	{
+		if ( uLength > BUFBLOCK_SIZE )
+		{
+			ioBuf = m_sendBuffer.PrepareBuffer( BUFBLOCK_SIZE );
+			memcpy( ioBuf, &pMsg[nSendSize], BUFBLOCK_SIZE );
+			m_sendBuffer.WriteFinished( BUFBLOCK_SIZE );
+			nSendSize += BUFBLOCK_SIZE;
+			uLength -= BUFBLOCK_SIZE;
+		}
+		else
+		{
+			ioBuf = m_sendBuffer.PrepareBuffer( uLength );
+			memcpy( ioBuf, &pMsg[nSendSize], uLength );
+			m_sendBuffer.WriteFinished( uLength );
+			break;
+		}
+	}
+	if ( !SendStart() ) return true;//已经在发送
+	//发送流程开始
+#ifdef WIN32
+	m_pNetMonitor->AddSend( m_socket.GetSocket(), NULL, 0 );
+#else
+	//在STNetEngine::MsgWorker()中执行，一定是在RecvData()之后，所以绝对不会被
+	//m_pNetMonitor->AddIO( m_socket.GetSocket(), true, false );覆盖，不会遗漏发送请求
+	((STEpoll*)m_pNetMonitor)->AddIO( m_socket.GetSocket(), true, true );
+#endif
 	return true;
 }
 

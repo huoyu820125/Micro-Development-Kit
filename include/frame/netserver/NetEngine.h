@@ -177,6 +177,8 @@ public:
 	//设置工作线程启动回调函数
 	void SetOnWorkStart( MethodPointer method, void *pObj, void *pParam );
 	void SetOnWorkStart( FuntionPointer fun, void *pParam );
+	//打开TCP_NODELAY
+	void OpenNoDelay();
 	/**
 	 * 开始
 	 * 成功返回true，失败返回false
@@ -200,6 +202,7 @@ public:
 	epoll_event *m_events;
 #endif
 	int64 m_nextConnectId;
+	bool m_noDelay;//开启TCP_NODELAY
 };
 
 }  // namespace mdk

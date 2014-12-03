@@ -137,4 +137,10 @@ void NetServer::CloseConnect( int64 hostID )
 	m_pNetCard->CloseConnect( hostID );
 }
 
+//´ò¿ªTCP_NODELAY
+void NetServer::OpenNoDelay()
+{
+	m_pNetCard->OpenNoDelay();
+}
+
 }  // namespace mdk

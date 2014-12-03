@@ -34,6 +34,7 @@ STNetEngine::STNetEngine()
 	m_stop = true;//停止标志
 	m_startError = "";
 	m_nHeartTime = 0;//心跳间隔(S)，默认不检查
+	m_noDelay = false;
 #ifdef WIN32
 	m_pNetMonitor = new STIocp;
 #else
@@ -341,6 +342,7 @@ void STNetEngine::NotifyOnClose(STNetConnect *pConnect)
 
 bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 {
+	if ( m_noDelay ) Socket::SetNoDelay(sock, true);
 	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, isConnectServer, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
@@ -1175,6 +1177,11 @@ bool STNetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool send
 	pSvr->state = SVR_CONNECT::connected;
 	OnConnect(svrSock, true);
 	return true;
+}
+
+void STNetEngine::OpenNoDelay()
+{
+	m_noDelay = true;
 }
 
 }

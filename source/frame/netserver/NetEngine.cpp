@@ -39,6 +39,7 @@ NetEngine::NetEngine()
 	m_pNetServer = NULL;
 	m_averageConnectCount = 5000;
 	m_nextConnectId = 0;
+	m_noDelay = false;
 }
 
 NetEngine::~NetEngine()
@@ -318,6 +319,7 @@ void NetEngine::NotifyOnClose(NetConnect *pConnect)
 
 bool NetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 {
+	if ( m_noDelay ) Socket::SetNoDelay(sock, true);
 	NetConnect *pConnect = new (m_pConnectPool->Alloc())NetConnect(sock, isConnectServer, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
@@ -1157,6 +1159,12 @@ bool NetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool sendab
 	pSvr->state = SVR_CONNECT::connected;
 	OnConnect(svrSock, true);
 	return true;
+}
+
+//´ò¿ªTCP_NODELAY
+void NetEngine::OpenNoDelay()
+{
+	m_noDelay = true;
 }
 
 }

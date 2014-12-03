@@ -8,6 +8,7 @@
 #pragma comment ( lib, "ws2_32.lib" )
 #else
 #include <netdb.h>
+#include <netinet/tcp.h>
 #endif
 #include <stdio.h>
 using namespace std;
@@ -206,24 +207,15 @@ bool Socket::Connect( const char *lpszHostAddress, unsigned short nHostPort, lon
 	sockAddr.sin_family = AF_INET;
 	sockAddr.sin_addr.s_addr = inet_addr(ip);
 	sockAddr.sin_port = htons( nHostPort );
-
-	char opt[256];
-	socklen_t optSize;
-	getsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, opt, &optSize);
-
-	struct timeval timeo = {lSecond, 0};
-	socklen_t len = sizeof(timeo);
-	timeo.tv_sec = lSecond;
-	setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeo, len);
-
+	SetSendTimeout(lSecond, 0);
 	if ( SOCKET_ERROR != connect(m_hSocket, (sockaddr*)&sockAddr, sizeof(sockAddr)) )
 	{
-		setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, opt, optSize);
+		SetSendTimeout(0, 0);
 		InitPeerAddress();
 		InitLocalAddress();
 		return true;
 	}
-	setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, opt, optSize);
+	SetSendTimeout(0, 0);
 
 	return false;
 }
@@ -617,5 +609,110 @@ char* Socket::HostName2IP( char *hostname )
 
 	return "";
 }
+
+bool Socket::SetNoDelay( bool yes )
+{
+	int opt = yes?1:0;
+	if ( -1 == setsockopt(m_hSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) )
+	{
+		return false;
+	}
+	return true;
+}
+
+bool Socket::SetNoDelay( SOCKET sock, bool yes )
+{
+	int opt = yes?1:0;
+	if ( -1 == setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) )
+	{
+		return false;
+	}
+	return true;
+}
+
+bool Socket::SetSendBufSize( int buffsize )
+{
+	if ( -1 == setsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&buffsize, sizeof(buffsize)) )
+	{
+		return false;
+	}
+
+}
+
+bool Socket::SetSendBufSize( SOCKET sock, int buffsize )
+{
+	if ( -1 == setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&buffsize, sizeof(buffsize)) )
+	{
+		return false;
+	}
+
+}
+
+bool Socket::SetRecvBufSize( int buffsize )
+{
+	if ( -1 == setsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&buffsize, sizeof(buffsize)) )
+	{
+		return false;
+	}
+
+}
+
+bool Socket::SetRecvBufSize( SOCKET sock, int buffsize )
+{
+	if ( -1 == setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&buffsize, sizeof(buffsize)) )
+	{
+		return false;
+	}
+
+}
+
+bool Socket::SetSendTimeout( long sec, long usec )
+{
+	struct timeval timeo = {sec, usec};
+	socklen_t len = sizeof(timeo);
+	if ( -1 == setsockopt(m_hSocket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeo, len) )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool Socket::SetSendTimeout( SOCKET sock, long sec, long usec )
+{
+	struct timeval timeo = {sec, usec};
+	socklen_t len = sizeof(timeo);
+	if ( -1 == setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeo, len) )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool Socket::SetRecvTimeout( long sec, long usec )
+{
+	struct timeval timeo = {sec, usec};
+	socklen_t len = sizeof(timeo);
+	if ( -1 == setsockopt(m_hSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeo, len) )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool Socket::SetRecvTimeout( SOCKET sock, long sec, long usec )
+{
+	struct timeval timeo = {sec, usec};
+	socklen_t len = sizeof(timeo);
+	if ( -1 == setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeo, len) )
+	{
+		return false;
+	}
+
+	return true;
+}
+
 
 }//namespace mdk

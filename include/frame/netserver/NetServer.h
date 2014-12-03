@@ -112,6 +112,8 @@ public:
 	//设置工作线程启动回调函数
 	void SetOnWorkStart( MethodPointer method, void *pObj, void *pParam );
 	void SetOnWorkStart( FuntionPointer fun, void *pParam );
+	//打开TCP_NODELAY模式（高吞吐）
+	void OpenNoDelay();
 	//监听某个端口，可多次调用监听多个端口
 	bool Listen(int port);
 	//异步连接外部服务器，可多次调用连接多个外部服务器

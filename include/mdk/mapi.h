@@ -41,6 +41,7 @@ namespace mdk
 	uint64 CurThreadId();//当前线程id
 	time_t mdk_Date();//返回0时0分0秒的当前日期
 	bool GetExeDir( char *exeDir, int size );//取得可执行程序位置
+	mdk::uint64 MillTime();//毫秒级当前时间
 }
 
 #endif // !defined MDK_MAPI_H 

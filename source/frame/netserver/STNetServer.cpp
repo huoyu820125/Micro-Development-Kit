@@ -80,4 +80,10 @@ void STNetServer::CloseConnect( int hostID )
 	m_pNetCard->CloseConnect( hostID );
 }
 
+//´ò¿ªTCP_NODELAY
+void STNetServer::OpenNoDelay()
+{
+	m_pNetCard->OpenNoDelay();
+}
+
 }  // namespace mdk

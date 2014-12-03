@@ -191,6 +191,21 @@ public:
 		返回值：成功返回TRUE，否则返回FALSE
 	*/
 	bool SetSockOpt( int nOptionName, const void* lpOptionValue, int nOptionLen, int nLevel = SOL_SOCKET );
+	//开启TCP_NODELAY设置,对于要频繁发送小数据的连接需要设置此设置提高吞吐能力
+	bool SetNoDelay( bool yes );
+	static bool SetNoDelay( SOCKET sock, bool yes );
+	//设置发送缓冲大小
+	bool SetSendBufSize( int buffsize );
+	static bool SetSendBufSize( SOCKET sock, int buffsize );
+	//设置接收缓冲大小
+	bool SetRecvBufSize( int buffsize );
+	static bool SetRecvBufSize( SOCKET sock, int buffsize );
+	//设置发送超时
+	bool SetSendTimeout( long sec, long usec );
+	static bool SetSendTimeout( SOCKET sock, long sec, long usec );
+	//设置接收超时
+	bool SetRecvTimeout( long sec, long usec );
+	static bool SetRecvTimeout( SOCKET sock, long sec, long usec );
 
 	/*
 		功能：Socket初始化
