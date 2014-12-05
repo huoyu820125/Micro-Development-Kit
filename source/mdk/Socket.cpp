@@ -617,6 +617,7 @@ bool Socket::SetNoDelay( bool yes )
 	{
 		return false;
 	}
+
 	return true;
 }
 
@@ -627,6 +628,7 @@ bool Socket::SetNoDelay( SOCKET sock, bool yes )
 	{
 		return false;
 	}
+
 	return true;
 }
 
@@ -637,6 +639,7 @@ bool Socket::SetSendBufSize( int buffsize )
 		return false;
 	}
 
+	return true;
 }
 
 bool Socket::SetSendBufSize( SOCKET sock, int buffsize )
@@ -646,6 +649,7 @@ bool Socket::SetSendBufSize( SOCKET sock, int buffsize )
 		return false;
 	}
 
+	return true;
 }
 
 bool Socket::SetRecvBufSize( int buffsize )
@@ -655,6 +659,7 @@ bool Socket::SetRecvBufSize( int buffsize )
 		return false;
 	}
 
+	return true;
 }
 
 bool Socket::SetRecvBufSize( SOCKET sock, int buffsize )
@@ -664,6 +669,7 @@ bool Socket::SetRecvBufSize( SOCKET sock, int buffsize )
 		return false;
 	}
 
+	return true;
 }
 
 bool Socket::SetSendTimeout( long sec, long usec )
