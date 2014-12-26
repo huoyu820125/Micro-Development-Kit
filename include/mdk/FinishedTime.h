@@ -58,8 +58,8 @@ public:
 	void Finished();
 protected:
 private:
-	clock_t m_start;
-	clock_t m_end;
+	mdk::int64 m_start;
+	mdk::int64 m_end;
 	mdk::uint32 m_useTime;
 	mdk::Task m_task;
 	bool m_finished;
