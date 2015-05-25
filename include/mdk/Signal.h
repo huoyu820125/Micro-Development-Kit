@@ -12,7 +12,8 @@
 	多次Notify，只会保留第1次有效，之后全部丢失
 */
 #ifdef WIN32
-#include <windows.h>
+//为了不include <windows.h>
+typedef void *HANDLE;
 #else
 #include <pthread.h>
 #include <semaphore.h>

@@ -23,7 +23,7 @@ protected:
 	connectState RecvData( NetConnect *pConnect, char *pData, unsigned short uSize );
 	//发送数据
 	connectState SendData(NetConnect *pConnect, unsigned short uSize);
-	SOCKET ListenPort(int port);//监听一个端口,返回创建的套接字
+	int ListenPort(int port);//监听一个端口,返回创建的套接字
 };
 
 }//namespace mdk

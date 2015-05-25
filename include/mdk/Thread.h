@@ -31,7 +31,9 @@
 #include "Task.h"
 
 #ifdef WIN32
-#include <windows.h>
+//ÎªÁË²»include <windows.h>
+typedef void *HANDLE;
+typedef unsigned long       DWORD;
 #else
 #include <pthread.h>
 #include <signal.h>

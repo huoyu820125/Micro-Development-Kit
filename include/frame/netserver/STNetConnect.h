@@ -26,7 +26,7 @@ class STNetConnect
 	friend class STNetEngine;
 	friend class STNetHost;
 public:
-	STNetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool);
+	STNetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool);
 	virtual ~STNetConnect();
 
 	/*
@@ -77,7 +77,11 @@ public:
 		服务器地址
 	 */
 	void GetServerAddress( std::string &ip, int &port );
-	
+	//设置服务信息
+	void SetSvrInfo(void *pData);
+	//取服务信息
+	void* GetSvrInfo();
+private:	
 	int m_useCount;//访问计数
 	IOBuffer m_recvBuffer;//接收缓冲
 	int m_nReadCount;//正在进行读接收缓冲的线程数
@@ -98,6 +102,7 @@ public:
 	bool m_bIsServer;//主机类型服务器
 	std::map<int,int> m_groups;//所属分组
 	MemoryPool *m_pMemoryPool;
+	void *m_pSvrInfo;//服务信息，当NetConnect代表一个服务器时有效
 	
 };
 

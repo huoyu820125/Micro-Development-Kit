@@ -120,7 +120,12 @@ public:
 	//可对同一个ip端口，调用多次，产生多个链接
 	//reConnectTime 此链接断开后，自动重连的等待时间，最小10s，不传递或传递小于等于0，则断开后不重连
 	//※不要连接自身，服务器未做此测试，可能出现bug
-	bool Connect(const char *ip, int port, int reConnectTime = -1);
+	/*
+		v1.93新增pSvrInfo参数
+		用于绑定一个信息，在连接完成时可以通过NetHost.GetSvrInfo取得
+		以确定host代表是哪个服务器
+	*/
+	bool Connect(const char *ip, int port, void *pSvrInfo = NULL, int reConnectTime = -1);
 	/*
 		广播消息
 		向属于recvGroupIDs中任意一组，同时过滤掉属于filterGroupIDs中任意一组的主机，发送消息

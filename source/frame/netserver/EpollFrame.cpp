@@ -76,7 +76,7 @@ void EpollFrame::NewConnectMonitor()
 			}
 
 			listenSock.Detach();
-			listenSock.Attach((SOCKET)events[i].data.u64);
+			listenSock.Attach((int)events[i].data.u64);
 			while ( true )
 			{
 				listenSock.Accept( clientSock );
@@ -85,7 +85,7 @@ void EpollFrame::NewConnectMonitor()
 					clientSock.Detach();
 					break;
 				}
-				OnConnect(clientSock.Detach(), false);
+				OnConnect(clientSock.Detach());
 			}
 			if ( !m_pNetMonitor->AddAccept( listenSock.GetSocket() ) ) 
 			{
@@ -246,7 +246,7 @@ connectState EpollFrame::RecvData( NetConnect *pConnect, char *pData, unsigned s
 	return ok;
 }
 
-SOCKET EpollFrame::ListenPort(int port)
+int EpollFrame::ListenPort(int port)
 {
 #ifndef WIN32
 	Socket listenSock;//¼àÌýsocket

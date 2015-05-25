@@ -119,7 +119,7 @@ bool STNetEngine::WINIO(int timeout)
 		return false;
 		break;
 	case STIocp::connect :
-		OnConnect( e.client, false );
+		OnConnect( e.client );
 		m_pNetMonitor->AddAccept( e.sock );
 		break;
 	case STIocp::recv :
@@ -147,9 +147,9 @@ bool STNetEngine::LinuxIO( int timeout )
 	int i = 0;
 	Socket sockListen;
 	Socket sockClient;
-	SOCKET sock;
-	map<SOCKET,int>::iterator it;
-	pair<map<SOCKET,int>::iterator,bool> ret;
+	int sock;
+	map<int,int>::iterator it;
+	pair<map<int,int>::iterator,bool> ret;
 	
 	//没有可io的socket则等待新可io的socket
 	//否则检查是否有新的可io的socket，有则取出加入到m_ioList中，没有也不等待
@@ -171,7 +171,7 @@ bool STNetEngine::LinuxIO( int timeout )
 				sockListen.Accept( sockClient );
 				if ( INVALID_SOCKET == sockClient.GetSocket() ) break;
 				sockClient.SetSockMode();
-				OnConnect(sockClient.Detach(), false);
+				OnConnect(sockClient.Detach());
 			}
 			continue;
 		}
@@ -179,7 +179,7 @@ bool STNetEngine::LinuxIO( int timeout )
 		//加入到io列表，统一调度
 		if ( m_pNetMonitor->IsWriteAble(i) ) eventType = 1|2;//recv+send事件
 		else eventType = 1;//recv事件
-		ret = m_ioList.insert(map<SOCKET,int>::value_type(sock,eventType) );//增加可io的对象
+		ret = m_ioList.insert(map<int,int>::value_type(sock,eventType) );//增加可io的对象
 		if ( !ret.second ) ret.first->second = ret.first->second|eventType;//设置新事件
 	}
 	//遍历m_ioList，执行1次io
@@ -340,15 +340,21 @@ void STNetEngine::NotifyOnClose(STNetConnect *pConnect)
 	}
 }
 
-bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
+bool STNetEngine::OnConnect( int sock, SVR_CONNECT *pSvr )
 {
 	if ( m_noDelay ) Socket::SetNoDelay(sock, true);
-	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, isConnectServer, m_pNetMonitor, this, m_pConnectPool);
+	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, 
+		NULL == pSvr?false:true, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
 		closesocket(sock);
 		return false;
 	}
+	if ( NULL != pSvr && pSvr->pSvrInfo ) 
+	{
+		pConnect->SetSvrInfo(pSvr->pSvrInfo);
+	}
+
 	//加入管理列表
 	pConnect->RefreshHeart();
 	AtomAdd(&pConnect->m_useCount, 1);//被m_connectList访问
@@ -363,7 +369,7 @@ bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 		导致业务层不知道该如何处理消息
 	 */
 	bool bMonitor = true;
-	if ( !m_pNetMonitor->AddMonitor(sock) ) return false;
+	if ( !m_pNetMonitor->AddMonitor(sock, NULL, 0) ) return false;
 #ifdef WIN32
 	bMonitor = m_pNetMonitor->AddRecv( 
 		sock, 
@@ -376,14 +382,14 @@ bool STNetEngine::OnConnect( SOCKET sock, bool isConnectServer )
 	return true;
 }
 
-void STNetEngine::OnClose( SOCKET sock )
+void STNetEngine::OnClose( int sock )
 {
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
 	if ( itNetConnect == m_connectList.end() )return;//底层已经主动断开
 	CloseConnect( itNetConnect );
 }
 
-connectState STNetEngine::OnData( SOCKET sock, char *pData, unsigned short uSize )
+connectState STNetEngine::OnData( int sock, char *pData, unsigned short uSize )
 {
 	connectState cs = unconnect;
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);//client列表里查找
@@ -450,7 +456,7 @@ connectState STNetEngine::RecvData( STNetConnect *pConnect, char *pData, unsigne
 }
 
 //关闭一个连接
-void STNetEngine::CloseConnect( SOCKET sock )
+void STNetEngine::CloseConnect( int sock )
 {
 	ConnectList::iterator itNetConnect = m_connectList.find( sock );
 	if ( itNetConnect == m_connectList.end() ) return;//底层已经主动断开
@@ -458,7 +464,7 @@ void STNetEngine::CloseConnect( SOCKET sock )
 }
 
 //响应发送完成事件
-connectState STNetEngine::OnSend( SOCKET sock, unsigned short uSize )
+connectState STNetEngine::OnSend( int sock, unsigned short uSize )
 {
 	connectState cs = unconnect;
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
@@ -569,9 +575,9 @@ connectState STNetEngine::SendData(STNetConnect *pConnect, unsigned short uSize)
 
 bool STNetEngine::Listen(int port)
 {
-	pair<map<int,SOCKET>::iterator,bool> ret 
-		= m_serverPorts.insert(map<int,SOCKET>::value_type(port,INVALID_SOCKET));
-	map<int,SOCKET>::iterator it = ret.first;
+	pair<map<int,int>::iterator,bool> ret 
+		= m_serverPorts.insert(map<int,int>::value_type(port,INVALID_SOCKET));
+	map<int,int>::iterator it = ret.first;
 	if ( !ret.second && INVALID_SOCKET != it->second ) return true;
 	if ( m_stop ) return true;
 
@@ -580,7 +586,7 @@ bool STNetEngine::Listen(int port)
 	return true;
 }
 
-SOCKET STNetEngine::ListenPort(int port)
+int STNetEngine::ListenPort(int port)
 {
 	Socket listenSock;//监听socket
 	if ( !listenSock.Init( Socket::tcp ) ) return INVALID_SOCKET;
@@ -590,7 +596,7 @@ SOCKET STNetEngine::ListenPort(int port)
 		listenSock.Close();
 		return INVALID_SOCKET;
 	}
-	if ( !m_pNetMonitor->AddMonitor( listenSock.GetSocket() ) ) 
+	if ( !m_pNetMonitor->AddMonitor( listenSock.GetSocket(), NULL, 0 ) ) 
 	{
 		listenSock.Close();
 		return INVALID_SOCKET;
@@ -608,7 +614,7 @@ SOCKET STNetEngine::ListenPort(int port)
 bool STNetEngine::ListenAll()
 {
 	bool ret = true;
-	map<int,SOCKET>::iterator it = m_serverPorts.begin();
+	map<int,int>::iterator it = m_serverPorts.begin();
 	char strPort[256];
 	string strFaild;
 	for ( ; it != m_serverPorts.end(); it++ )
@@ -628,7 +634,7 @@ bool STNetEngine::ListenAll()
 }
 
 
-bool STNetEngine::Connect(const char* ip, int port, int reConnectTime)
+bool STNetEngine::Connect(const char* ip, int port, void *pSvrInfo, int reConnectTime)
 {
 	uint64 addr64 = 0;
 	if ( !addrToI64(addr64, ip, port) ) return false;
@@ -642,6 +648,7 @@ bool STNetEngine::Connect(const char* ip, int port, int reConnectTime)
 	pSvr->sock = INVALID_SOCKET;
 	pSvr->addr = addr64;
 	pSvr->state = SVR_CONNECT::unconnected;
+	pSvr->pSvrInfo = pSvrInfo;
 	m_keepIPList[addr64].push_back(pSvr);
 	if ( m_stop ) return false;
 	
@@ -651,7 +658,7 @@ bool STNetEngine::Connect(const char* ip, int port, int reConnectTime)
 	if ( STNetEngine::success == ret )
 	{
 		pSvr->state = SVR_CONNECT::connected;
-		OnConnect(pSvr->sock, true);
+		OnConnect(pSvr->sock, pSvr);
 	}
 	else if ( STNetEngine::waitReulst == ret )
 	{
@@ -666,7 +673,7 @@ bool STNetEngine::Connect(const char* ip, int port, int reConnectTime)
 	return true;
 }
 
-STNetEngine::ConnectResult STNetEngine::ConnectOtherServer(const char* ip, int port, SOCKET &svrSock)
+STNetEngine::ConnectResult STNetEngine::ConnectOtherServer(const char* ip, int port, int &svrSock)
 {
 	svrSock = INVALID_SOCKET;
 	Socket sock;//监听socket
@@ -685,7 +692,7 @@ bool STNetEngine::ConnectAll()
 	int port;
 	int i = 0;
 	int count = 0;
-	SOCKET sock = INVALID_SOCKET;
+	int sock = INVALID_SOCKET;
 	
 	//重链尝试
 	SVR_CONNECT *pSvr = NULL;
@@ -723,7 +730,7 @@ bool STNetEngine::ConnectAll()
 			if ( STNetEngine::success == ret )
 			{
 				pSvr->state = SVR_CONNECT::connected;
-				OnConnect(pSvr->sock, true);
+				OnConnect(pSvr->sock, pSvr);
 			}
 			else if ( STNetEngine::waitReulst == ret )
 			{
@@ -744,7 +751,7 @@ bool STNetEngine::ConnectAll()
 void STNetEngine::SetServerClose(STNetConnect *pConnect)
 {
 	if ( !pConnect->m_host.IsServer() ) return;
-	SOCKET sock = pConnect->GetID();
+	int sock = pConnect->GetID();
 	map<uint64,vector<SVR_CONNECT*> >::iterator it = m_keepIPList.begin();
 	int i = 0;
 	int count = 0;
@@ -838,7 +845,7 @@ void STNetEngine::Select()
 #include <netdb.h>
 #endif
 
-STNetEngine::ConnectResult STNetEngine::AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort )
+STNetEngine::ConnectResult STNetEngine::AsycConnect( int svrSock, const char *lpszHostAddress, unsigned short nHostPort )
 {
 	if ( NULL == lpszHostAddress ) return STNetEngine::invalidParam;
 	//将域名转换为真实IP，如果lpszHostAddress本来就是ip，不影响转换结果
@@ -889,7 +896,7 @@ void* STNetEngine::ConnectFailed( STNetEngine::SVR_CONNECT *pSvr )
 	int reConnectSecond;
 	i64ToAddr(ip, port, pSvr->addr);
 	reConnectSecond = pSvr->reConnectSecond;
-	SOCKET svrSock = pSvr->sock;
+	int svrSock = pSvr->sock;
 	pSvr->sock = INVALID_SOCKET;
 	pSvr->state = SVR_CONNECT::unconnected;
 	closesocket(svrSock);
@@ -961,8 +968,8 @@ bool STNetEngine::EpollConnect( SVR_CONNECT **clientList, int clientCount )
 		将所有放入epoll监听队列失败的句柄，认为是可读可写的，去尝试一下链接是否成功
 	*/
 	errCode = errno;//epoll_wait失败时状态
-	volatile SOCKET delSock = 0;
-	volatile SOCKET delError = 0;
+	volatile int delSock = 0;
+	volatile int delError = 0;
 	for ( i = 0; i < clientCount; i++ )
 	{
 		if ( clientList[i]->inEpoll )
@@ -1006,14 +1013,14 @@ bool STNetEngine::SelectConnect( SVR_CONNECT **clientList, int clientCount )
 	int startPos = 0;
 	int endPos = 0;
 	int i = 0;
-	SOCKET maxSocket = 0;
+	int maxSocket = 0;
 	SVR_CONNECT *pSvr = NULL;
 	fd_set readfds; 
 	fd_set sendfds; 
 
 
 	//开始监听，每次监听1000个sock,select1次最大监听1024个
-	SOCKET svrSock;
+	int svrSock;
 	for ( endPos = 0; endPos < clientCount; )
 	{
 		maxSocket = 0;
@@ -1083,7 +1090,7 @@ bool STNetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool send
 	int recvError1 = 0;
 	char clientIP[256];
 	char serverIP[256];
-	SOCKET svrSock = pSvr->sock;
+	int svrSock = pSvr->sock;
 
 	if ( sendable )
 	{
@@ -1175,7 +1182,7 @@ bool STNetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool send
 	}
 
 	pSvr->state = SVR_CONNECT::connected;
-	OnConnect(svrSock, true);
+	OnConnect(svrSock, pSvr);
 	return true;
 }
 

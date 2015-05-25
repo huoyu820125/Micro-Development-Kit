@@ -35,11 +35,11 @@ public:
 	NetHost& operator=(const NetHost& obj);
 	/*
 		主机唯一标识
-		※V1.79以前，实际就是与该主机连接的SOCKET句柄，但不可直接使用socket相关api来操作该socket的io与close。
+		※V1.79以前，实际就是与该主机连接的int句柄，但不可直接使用socket相关api来操作该socket的io与close。
 		因为close时，底层需要做清理工作，如果直接使用socketclose()，则底层可能没机会执行清理工作,造成连接不可用
 		io操作底层已经使用io缓冲管理，直接使用api io将跳过io缓冲管理，且会与底层io并发，将导致数据错乱
 
-		※V1.79开始，变成一个自增的int64值与SOCKET句柄无关
+		※V1.79开始，变成一个自增的int64值与int句柄无关
 			id范围??兆，链接??多兆亿之后，id将转一圈回来，需要时间大约几十年
 			所以当某个链接持续几十年在线的极端情况下，才可能导致2个链接ID相同
 	*/	
@@ -177,6 +177,11 @@ public:
 		因为GetAddress表示的是对方
 	 */
 	void GetServerAddress( std::string &ip, int &port );
+	/*
+		取服务信息
+		就是调用NetServer::Connect()时传入的第3个参数
+	*/
+	void* GetSvrInfo();
 private:
 	NetConnect* m_pConnect;//连接对象指针,调用NetConnect的业务层接口，屏蔽NetConnect的通信层接口
 	

@@ -1,4 +1,7 @@
-V1.92(2015-02-02 114:46)
-修正mdk::uint64 MillTime()
-windows下取时间GetClickTime是开机到当前时间
-修正为取实际时间
+V1.94(2015-05-12 10:00)
+1.NetServer::Connect()接口增加参数svrInfo,给连接绑定一个信息
+当OnConnect(host)触发时,可以用host.GetSvrInfo()取出来(GetSvrInfo()也是NetHost新增接口)
+就可以知道host是代码的哪个服务,免得再去取host的ip port作比较来确定服务器类型
+
+2.去掉对windows.h的依赖,mdk头文件不再受包含顺序限制
+

@@ -3,6 +3,9 @@
 //////////////////////////////////////////////////////////////////////
 #include "../../include/mdk/Thread.h"
 #include <stdio.h>
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 namespace mdk
 {

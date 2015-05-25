@@ -111,9 +111,9 @@ bool NetServer::Listen(int port)
 }
 
 //连接其它IP
-bool NetServer::Connect(const char *ip, int port, int reConnectTime)
+bool NetServer::Connect(const char *ip, int port, void *pSvrInfo, int reConnectTime)
 {
-	m_pNetCard->Connect(ip, port, reConnectTime);
+	m_pNetCard->Connect(ip, port, pSvrInfo, reConnectTime);
 	return true;
 }
 

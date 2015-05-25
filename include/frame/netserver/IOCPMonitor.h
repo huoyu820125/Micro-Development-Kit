@@ -48,7 +48,7 @@ public:
 	{
 		int64 connectId;
 		EventType type;
-		SOCKET client;
+		int client;
 		char *pData;
 		unsigned short uDataSize;
 	}IO_EVENT;
@@ -83,7 +83,7 @@ public:
 		unsigned long m_dwRemoteAddressLength;
 		WSABUF m_wsaBuffer;//WSARecv接收缓冲数据,传递给WSARecv()的第2个参数
 		int64 connectId;
-		SOCKET sock;
+		int sock;
 		EventType completiontype;//完成类型1recv 2send
 	}IOCP_OVERLAPPED;
 public:
@@ -95,20 +95,20 @@ public:
 	//停止监听
 	bool Stop();
 	//增加一个监听对象
-	bool AddMonitor( SOCKET socket, char* pData, unsigned short dataSize );
+	bool AddMonitor( int socket, char* pData, unsigned short dataSize );
 	//等待事件发生,block无作用
 	bool WaitEvent( void *eventArray, int &count, bool block );
 	//增加一个接受连接的操作，有连接进来，WaitEvent会返回
-	bool AddAccept(SOCKET listenSocket);
+	bool AddAccept(int listenSocket);
 	//增加一个接收数据的操作，有数据到达，WaitEvent会返回
-	bool AddRecv( SOCKET socket, char* pData, unsigned short dataSize );
+	bool AddRecv( int socket, char* pData, unsigned short dataSize );
 	//增加一个发送数据的操作，发送完成，WaitEvent会返回
-	bool AddSend( SOCKET socket, char* pData, unsigned short dataSize );
+	bool AddSend( int socket, char* pData, unsigned short dataSize );
 protected:
-	int GetError(SOCKET sock, WSAOVERLAPPED* pWSAOVERLAPPED)  ;
+	int GetError(int sock, WSAOVERLAPPED* pWSAOVERLAPPED)  ;
 		
 private:
-	SOCKET m_listenSocket;
+	int m_listenSocket;
 	HANDLE m_hCompletPort;//完成端口句柄
 	int m_nCPUCount;
 	IOCP_OVERLAPPED m_stopOverlapped;

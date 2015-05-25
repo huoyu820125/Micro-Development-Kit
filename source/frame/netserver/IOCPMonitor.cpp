@@ -29,7 +29,7 @@ IOCPMonitor::~IOCPMonitor()
 
 }
 
-int IOCPMonitor::GetError(SOCKET sock, WSAOVERLAPPED* pWSAOVERLAPPED)  
+int IOCPMonitor::GetError(int sock, WSAOVERLAPPED* pWSAOVERLAPPED)  
 {  
 #ifdef WIN32
 	DWORD dwTrans;  
@@ -62,7 +62,7 @@ bool IOCPMonitor::Start( int nMaxMonitor )
 	return true;
 }
 
-bool IOCPMonitor::AddMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+bool IOCPMonitor::AddMonitor( int sock, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
 	//将监听套接字加入IOCP列队
@@ -87,7 +87,7 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 	*/
 	DWORD dwIOSize;
 	IOCP_OVERLAPPED *pOverlapped = NULL;//接收完成数据
-	SOCKET sock;
+	int sock;
 	if ( !::GetQueuedCompletionStatus( m_hCompletPort, &dwIOSize, 
 						(LPDWORD)&sock, (OVERLAPPED**)&pOverlapped,
 						INFINITE ) )
@@ -163,7 +163,7 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 	return true;
 }
 
-bool IOCPMonitor::AddAccept( SOCKET listenSocket )
+bool IOCPMonitor::AddAccept( int listenSocket )
 {
 #ifdef WIN32
 	if ( SOCKET_ERROR == listenSocket ) return false;
@@ -202,7 +202,7 @@ bool IOCPMonitor::AddAccept( SOCKET listenSocket )
 }
 
 //增加一个接收数据的操作，有数据到达，WaitEvent会返回
-bool IOCPMonitor::AddRecv( SOCKET socket, char* pData, unsigned short dataSize )
+bool IOCPMonitor::AddRecv( int socket, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
 	IOCP_DATA *pIocpData = (IOCP_DATA *)pData;
@@ -239,7 +239,7 @@ bool IOCPMonitor::AddRecv( SOCKET socket, char* pData, unsigned short dataSize )
 }
 
 //增加一个发送数据的操作，发送完成，WaitEvent会返回
-bool IOCPMonitor::AddSend( SOCKET socket, char* pData, unsigned short dataSize )
+bool IOCPMonitor::AddSend( int socket, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
 	IOCP_DATA *pIocpData = (IOCP_DATA *)pData;

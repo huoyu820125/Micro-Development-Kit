@@ -85,4 +85,9 @@ void STNetHost::GetAddress( string &ip, int &port )
 	return;
 }
 
+void* STNetHost::GetSvrInfo()
+{
+	return m_pConnect->GetSvrInfo();
+}
+
 }  // namespace mdk

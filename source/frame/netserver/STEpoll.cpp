@@ -147,11 +147,11 @@ bool STEpoll::IsWriteAble( int i )
 }
 
 //增加一个Accept操作，有新连接产生，WaitEvent会返回
-bool STEpoll::AddAccept( SOCKET sock )
+bool STEpoll::AddAccept( int sock )
 {
 #ifndef WIN32
 	if ( m_listenSockets.end() != m_listenSockets.find(sock) ) return false;
-	m_listenSockets.insert(map<SOCKET,SOCKET>::value_type(sock,sock));
+	m_listenSockets.insert(map<int,int>::value_type(sock,sock));
 	epoll_event ev;
     ev.events = EPOLLIN|EPOLLET;
     ev.data.fd = sock;
@@ -161,7 +161,7 @@ bool STEpoll::AddAccept( SOCKET sock )
 }
 
 //增加一个IO操作，可IO时WaitEvent会返回
-bool STEpoll::AddIO( SOCKET sock, bool read, bool write )
+bool STEpoll::AddIO( int sock, bool read, bool write )
 {
 #ifndef WIN32
 	epoll_event ev;
@@ -174,17 +174,17 @@ bool STEpoll::AddIO( SOCKET sock, bool read, bool write )
 	return true;
 }
 
-bool STEpoll::DelMonitor( SOCKET sock )
+bool STEpoll::DelMonitor( int sock )
 {
 #ifndef WIN32
 	if ( epoll_ctl(m_hEpoll, EPOLL_CTL_DEL, sock, NULL) < 0 ) return false;
-	map<SOCKET,SOCKET>::iterator it = m_listenSockets.find(sock);
+	map<int,int>::iterator it = m_listenSockets.find(sock);
 	if ( it != m_listenSockets.end() ) m_listenSockets.erase(it);
 #endif	
 	return true;
 }
 
-bool STEpoll::AddMonitor( SOCKET sock )
+bool STEpoll::AddMonitor( int sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
 	epoll_event ev;

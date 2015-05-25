@@ -43,13 +43,13 @@ public:
 	bool IsWriteAble( int i );
 
 	//增加一个Accept操作，有新连接产生，WaitEvent会返回
-	bool AddAccept( SOCKET sock );
-	bool AddMonitor( SOCKET sock );
+	bool AddAccept( int sock );
+	bool AddMonitor( int socket, char* pData, unsigned short dataSize );
 	//增加一个IO操作，可IO时WaitEvent会返回
-	bool AddIO( SOCKET sock, bool read, bool write );
+	bool AddIO( int sock, bool read, bool write );
 	//等待事件发生
 	//删除一个监听对象从监听列表
-	bool DelMonitor( SOCKET sock );
+	bool DelMonitor( int sock );
 protected:
 	void SheildSigPipe();//屏蔽SIGPIPE信号，避免进程被该信号关闭
 		
@@ -57,10 +57,10 @@ protected:
 private:
 	bool m_bStop;
 	int m_nMaxMonitor;//监听的socket数量
-	SOCKET m_epollExit;//epoll退出控制sock
+	int m_epollExit;//epoll退出控制sock
 	
 	int m_hEpoll;//EPOLLIN生产者 epoll句柄
-	std::map<SOCKET,SOCKET> m_listenSockets;
+	std::map<int,int> m_listenSockets;
 #ifndef WIN32
 	epoll_event *m_events;	//epoll事件
 #endif

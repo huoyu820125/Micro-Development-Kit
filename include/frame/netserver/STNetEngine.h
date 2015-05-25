@@ -23,7 +23,7 @@ class STIocp;
 class STEpoll;
 class STNetServer;
 class MemoryPool;
-typedef std::map<SOCKET,STNetConnect*> ConnectList;
+typedef std::map<int,STNetConnect*> ConnectList;
 	
 /**
  * 服务器通信引擎类(单线程版)
@@ -71,10 +71,10 @@ protected:
 	STIocp *m_pNetMonitor;
 #else
 	STEpoll *m_pNetMonitor;
-	std::map<SOCKET,int> m_ioList;//未完成io操作的socket列表
+	std::map<int,int> m_ioList;//未完成io操作的socket列表
 #endif
 	STNetServer *m_pNetServer;
-	std::map<int,SOCKET> m_serverPorts;//提供服务的端口,key端口，value状态监听这个端口的套接字
+	std::map<int,int> m_serverPorts;//提供服务的端口,key端口，value状态监听这个端口的套接字
 	typedef struct SVR_CONNECT
 	{
 		enum ConnectState
@@ -84,11 +84,12 @@ protected:
 				unconnectting = 2,
 				connected = 3,
 		};
-		SOCKET sock;				//句柄
+		int sock;				//句柄
 		uint64 addr;				//地址
 		int reConnectSecond;		//重链时间，小于0表示不重链
 		time_t lastConnect;			//上次尝试链接时间
 		ConnectState state;			//链接状态
+		void *pSvrInfo;				//服务信息
 #ifndef WIN32
 		bool inEpoll;				//在epoll中
 #endif
@@ -100,21 +101,21 @@ protected:
 	//linux下网络io处理
 	bool LinuxIO(int timeout);
 	//响应连接事件,sock为新连接的套接字
-	bool OnConnect( SOCKET sock, bool isConnectServer );
+	bool OnConnect( int sock, SVR_CONNECT *pSvr = NULL );
 	//响应关闭事件，sock为关闭的套接字
-	void OnClose( SOCKET sock );
+	void OnClose( int sock );
 	void NotifyOnClose(STNetConnect *pConnect);//发出OnClose通知
 	//响应数据到达事件，sock为有数据到达的套接字
-	connectState OnData( SOCKET sock, char *pData, unsigned short uSize );
+	connectState OnData( int sock, char *pData, unsigned short uSize );
 	/*
 		接收数据
 		返回连接状态
 	*/
 	connectState RecvData( STNetConnect *pConnect, char *pData, unsigned short uSize );
 	void* MsgWorker( STNetConnect *pConnect );//业务层处理消息
-	connectState OnSend( SOCKET sock, unsigned short uSize );//响应发送事件
+	connectState OnSend( int sock, unsigned short uSize );//响应发送事件
 	virtual connectState SendData(STNetConnect *pConnect, unsigned short uSize);//发送数据
-	virtual SOCKET ListenPort(int port);//监听一个端口,返回创建的套接字
+	virtual int ListenPort(int port);//监听一个端口,返回创建的套接字
 	//向某组连接广播消息(业务层接口)
 	void BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount );
 	void SendMsg( int hostID, char *msg, unsigned int msgsize );//向某主机发送消息(业务层接口)
@@ -139,13 +140,13 @@ private:
 		invalidParam = 3,
 		faild = 4,
 	};
-	STNetEngine::ConnectResult ConnectOtherServer(const char* ip, int port, SOCKET &svrSock);//异步连接一个服务,立刻成功返回true，否则返回false，等待select结果
+	STNetEngine::ConnectResult ConnectOtherServer(const char* ip, int port, int &svrSock);//异步连接一个服务,立刻成功返回true，否则返回false，等待select结果
 	bool ConnectAll();//连接所有注册的服务，已连接的会自动跳过
 	void SetServerClose(STNetConnect *pConnect);//设置已连接的服务为关闭状态
 	const char* GetInitError();//取得启动错误信息
 	void Select();//检查向外发起链接的结果
 	void* ConnectFailed( STNetEngine::SVR_CONNECT *pSvr );
-	STNetEngine::ConnectResult AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort );
+	STNetEngine::ConnectResult AsycConnect( int svrSock, const char *lpszHostAddress, unsigned short nHostPort );
 	bool EpollConnect( SVR_CONNECT **clientList, int clientCount );//clientCount个连接全部收到结果，返回true,否则返回false
 	bool SelectConnect( SVR_CONNECT **clientList, int clientCount );//clientCount个连接全部收到结果，返回true,否则返回false
 	bool ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool sendable, int api, int errorCode );//链接已完成返回true（不表示成功，失败也是完成，外部不需要处理，成功失败在内部已处理），否则返回false
@@ -173,14 +174,14 @@ public:
 	//等待停止
 	void WaitStop();
 	//关闭一个网络对象,通信层发现网络对象关闭连接时，派生类调用接口
-	void CloseConnect( SOCKET sock );
+	void CloseConnect( int sock );
 	//监听一个端口
 	bool Listen( int port );
 	/*
 		连接一个服务
 		reConnectTime < 0表示断开后不重新自动链接
 	*/
-	bool Connect(const char* ip, int port, int reConnectTime);
+	bool Connect(const char* ip, int port, void *pSvrInfo, int reConnectTime);
 	SVR_CONNECT** m_clientList;
 #ifndef WIN32
 	int m_hEPoll;

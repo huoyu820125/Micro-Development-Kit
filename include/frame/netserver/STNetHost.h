@@ -33,7 +33,7 @@ public:
 	STNetHost& operator=(const STNetHost& obj);
 	/*
 		主机唯一标识
-		※实际就是与该主机连接的SOCKET句柄，但不可直接使用socket相关api来操作该socket的io与close。
+		※实际就是与该主机连接的int句柄，但不可直接使用socket相关api来操作该socket的io与close。
 		因为close时，底层需要做清理工作，如果直接使用socketclose()，则底层可能没机会执行清理工作,造成连接不可用
 		io操作底层已经使用io缓冲管理，直接使用api io将跳过io缓冲管理，且会与底层io并发，将导致数据错乱
 	*/
@@ -98,6 +98,11 @@ public:
 		因为GetAddress表示的是对方
 	 */
 	void GetServerAddress( std::string &ip, int &port );
+	/*
+		取服务信息
+		就是调用NetServer::Connect()时传入的第3个参数
+	*/
+	void* GetSvrInfo();
 private:
 	STNetConnect* m_pConnect;//连接对象指针,调用STNetConnect的业务层接口，屏蔽STNetConnect的通信层接口
 	

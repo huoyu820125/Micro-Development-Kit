@@ -2,6 +2,9 @@
 //
 //////////////////////////////////////////////////////////////////////
 #include "../../include/mdk/Lock.h"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 namespace mdk
 {
@@ -30,7 +33,7 @@ void AutoLock::Unlock()
 Mutex::Mutex()
 {
 #ifdef WIN32
-	InitializeCriticalSection( &m_mutex );
+	InitializeCriticalSection( (CRITICAL_SECTION*)&m_mutex );
 #else
 	int kind = PTHREAD_MUTEX_FAST_NP;
 	pthread_mutexattr_t mutexattr;//ª•≥‚¡ø Ù–‘
@@ -46,7 +49,7 @@ Mutex::Mutex()
 Mutex::~Mutex()
 {
 #ifdef WIN32
-	DeleteCriticalSection( &m_mutex );
+	DeleteCriticalSection( (CRITICAL_SECTION*)&m_mutex );
 #else
 	pthread_mutex_destroy( &m_mutex );
 #endif
@@ -55,7 +58,7 @@ Mutex::~Mutex()
 void Mutex::Lock()
 {
 #ifdef WIN32
-	EnterCriticalSection( &m_mutex );
+	EnterCriticalSection( (CRITICAL_SECTION*)&m_mutex );
 #else
 	pthread_mutex_lock( &m_mutex );
 #endif
@@ -64,7 +67,7 @@ void Mutex::Lock()
 void Mutex::Unlock()
 {
 #ifdef WIN32
-	LeaveCriticalSection( &m_mutex );
+	LeaveCriticalSection( (CRITICAL_SECTION*)&m_mutex );
 #else
 	pthread_mutex_unlock( &m_mutex );
 #endif

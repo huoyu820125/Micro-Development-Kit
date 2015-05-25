@@ -24,7 +24,7 @@ STIocp::~STIocp()
 
 }
 
-int STIocp::GetError(SOCKET sock, WSAOVERLAPPED* pWSAOVERLAPPED)  
+int STIocp::GetError(int sock, WSAOVERLAPPED* pWSAOVERLAPPED)  
 {  
 #ifdef WIN32
 	DWORD dwTrans;  
@@ -65,7 +65,7 @@ bool STIocp::Stop()
 	return false;
 }
 
-bool STIocp::AddMonitor( SOCKET sock )
+bool STIocp::AddMonitor( int sock, char* pData, unsigned short dataSize )
 {
 #ifdef WIN32
 	//将监听套接字加入IOCP列队
@@ -155,7 +155,7 @@ bool STIocp::WaitEvent( IO_EVENT &sockEvent, int timeout )
 	return true;
 }
 
-bool STIocp::AddAccept( SOCKET listenSocket )
+bool STIocp::AddAccept( int listenSocket )
 {
 #ifdef WIN32
 	if ( SOCKET_ERROR == listenSocket ) return false;
@@ -194,7 +194,7 @@ bool STIocp::AddAccept( SOCKET listenSocket )
 }
 
 //增加一个接收数据的操作，有数据到达，WaitEvent会返回
-bool STIocp::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize )
+bool STIocp::AddRecv( int socket, char* recvBuf, unsigned short bufSize )
 {
 #ifdef WIN32
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;
@@ -229,7 +229,7 @@ bool STIocp::AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize )
 }
 
 //增加一个发送数据的操作，发送完成，WaitEvent会返回
-bool STIocp::AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize )
+bool STIocp::AddSend( int socket, char* dataBuf, unsigned short dataSize )
 {
 #ifdef WIN32
 	IOCP_OVERLAPPED *pOverlapped = new (m_iocpDataPool.Alloc())IOCP_OVERLAPPED;

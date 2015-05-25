@@ -77,7 +77,7 @@ bool EpollMonitor::Stop()
 }
 
 //增加一个Accept操作，有新连接产生，WaitEvent会返回
-bool EpollMonitor::AddAccept( SOCKET sock )
+bool EpollMonitor::AddAccept( int sock )
 {
 #ifndef WIN32
 	epoll_event ev;
@@ -90,7 +90,7 @@ bool EpollMonitor::AddAccept( SOCKET sock )
 }
 
 //增加一个接收数据的操作，有数据到达，WaitEvent会返回
-bool EpollMonitor::AddRecv( SOCKET sock, char* pData, unsigned short dataSize )
+bool EpollMonitor::AddRecv( int sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
 	int64 connectId = 0;
@@ -104,7 +104,7 @@ bool EpollMonitor::AddRecv( SOCKET sock, char* pData, unsigned short dataSize )
 }
 
 //增加一个发送数据的操作，发送完成，WaitEvent会返回
-bool EpollMonitor::AddSend( SOCKET sock, char* pData, unsigned short dataSize )
+bool EpollMonitor::AddSend( int sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
 	int64 connectId = 0;
@@ -117,7 +117,7 @@ bool EpollMonitor::AddSend( SOCKET sock, char* pData, unsigned short dataSize )
 	return true;
 }
 
-bool EpollMonitor::DelMonitor( SOCKET sock )
+bool EpollMonitor::DelMonitor( int sock )
 {
 #ifndef WIN32
     if ( !DelMonitorIn(sock) || !DelMonitorOut(sock) ) return false;
@@ -125,7 +125,7 @@ bool EpollMonitor::DelMonitor( SOCKET sock )
 	return true;
 }
 
-bool EpollMonitor::DelMonitorIn( SOCKET sock )
+bool EpollMonitor::DelMonitorIn( int sock )
 {
 #ifndef WIN32
     if ( epoll_ctl(m_hEPollIn, EPOLL_CTL_DEL, sock, NULL) < 0 ) return false;
@@ -133,7 +133,7 @@ bool EpollMonitor::DelMonitorIn( SOCKET sock )
 	return true;
 }
 
-bool EpollMonitor::DelMonitorOut( SOCKET sock )
+bool EpollMonitor::DelMonitorOut( int sock )
 {
 #ifndef WIN32
     if ( epoll_ctl(m_hEPollOut, EPOLL_CTL_DEL, sock, NULL) < 0 ) return false;
@@ -141,7 +141,7 @@ bool EpollMonitor::DelMonitorOut( SOCKET sock )
 	return true;
 }
 
-bool EpollMonitor::AddConnectMonitor( SOCKET sock )
+bool EpollMonitor::AddConnectMonitor( int sock )
 {
 #ifndef WIN32
 	epoll_event ev;
@@ -152,7 +152,7 @@ bool EpollMonitor::AddConnectMonitor( SOCKET sock )
 	return true;
 }
 
-bool EpollMonitor::AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+bool EpollMonitor::AddDataMonitor( int sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
 	int64 connectId = 0;
@@ -165,7 +165,7 @@ bool EpollMonitor::AddDataMonitor( SOCKET sock, char* pData, unsigned short data
 	return true;
 }
 
-bool EpollMonitor::AddSendableMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+bool EpollMonitor::AddSendableMonitor( int sock, char* pData, unsigned short dataSize )
 {
 #ifndef WIN32
 	int64 connectId = 0;

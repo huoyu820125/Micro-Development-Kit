@@ -33,7 +33,7 @@ public:
 	friend class IOCPFrame;
 	friend class EpollFrame;
 public:
-	NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool);
+	NetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool);
 	virtual ~NetConnect();
 
 public:
@@ -91,7 +91,10 @@ public:
 	void SetData( HostData *pData, bool autoFree );
 	//取得客户数据
 	HostData* GetData();
-
+	//设置服务信息
+	void SetSvrInfo(void *pData);
+	//取服务信息
+	void* GetSvrInfo();
 private:
 	int m_useCount;//访问计数
 	IOBuffer m_recvBuffer;//接收缓冲
@@ -117,6 +120,7 @@ private:
 	HostData *m_pHostData;//主机数据
 	mdk::Mutex m_mutexData;//主机数据锁
 	bool m_autoFreeData;
+	void *m_pSvrInfo;//服务信息，当NetConnect代表一个服务器时有效
 
 };
 

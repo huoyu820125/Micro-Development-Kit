@@ -14,7 +14,7 @@ using namespace std;
 namespace mdk
 {
 
-NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool)
+NetConnect::NetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool)
 :m_socket(sock,Socket::tcp)
 {
 	m_pMemoryPool = pMemoryPool;
@@ -38,6 +38,7 @@ NetConnect::NetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor
 	m_socket.InitLocalAddress();
  	m_pHostData = NULL;
 	m_autoFreeData = true;
+	m_pSvrInfo = NULL;
 }
 
 NetConnect::~NetConnect()
@@ -302,6 +303,16 @@ HostData* NetConnect::GetData()
 		}
 	}
 	return m_pHostData;
+}
+
+void NetConnect::SetSvrInfo(void *pData)
+{
+	m_pSvrInfo = pData;
+}
+
+void* NetConnect::GetSvrInfo()
+{
+	return m_pSvrInfo;
 }
 
 }//namespace mdk

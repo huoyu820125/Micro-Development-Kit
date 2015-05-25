@@ -287,6 +287,7 @@ mdk::uint64 MillTime()
 	ui.HighPart = ft.dwHighDateTime;
 	nLL = (ft.dwHighDateTime << 32) + ft.dwLowDateTime;
 	mdk::int64 mt = ((LONGLONG)(ui.QuadPart - 116444736000000000) / 10000);
+	mt -= 3600 * 8 * 1000;//日历时间(time()返回的时间)
 	return mt;
 #else
 	struct timespec ts;

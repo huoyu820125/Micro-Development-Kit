@@ -17,7 +17,7 @@ unsigned int g_r = 0;
 namespace mdk
 {
 
-STNetConnect::STNetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool)
+STNetConnect::STNetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool)
 :m_socket(sock,Socket::tcp)
 {
 	m_pMemoryPool = pMemoryPool;
@@ -39,6 +39,7 @@ STNetConnect::STNetConnect(SOCKET sock, bool bIsServer, NetEventMonitor *pNetMon
 #endif
 	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();
+	m_pSvrInfo = NULL;
 }
 
 
@@ -213,6 +214,16 @@ void STNetConnect::GetAddress( string &ip, int &port )
 	if ( !this->m_bIsServer ) m_socket.GetPeerAddress( ip, port );
 	else m_socket.GetLocalAddress( ip, port );
 	return;
+}
+
+void STNetConnect::SetSvrInfo(void *pData)
+{
+	m_pSvrInfo = pData;
+}
+
+void* STNetConnect::GetSvrInfo()
+{
+	return m_pSvrInfo;
 }
 
 }

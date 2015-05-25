@@ -6,6 +6,10 @@
 #include "../../include/mdk/atom.h"
 #include <ctime>
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 namespace mdk
 {
 	

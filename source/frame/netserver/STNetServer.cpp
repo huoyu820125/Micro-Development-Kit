@@ -59,9 +59,9 @@ bool STNetServer::Listen(int port)
 	return true;
 }
 
-bool STNetServer::Connect(const char *ip, int port, int reConnectTime)
+bool STNetServer::Connect(const char *ip, int port, void *pSvrInfo, int reConnectTime)
 {
-	m_pNetCard->Connect(ip, port, reConnectTime);
+	m_pNetCard->Connect(ip, port, pSvrInfo, reConnectTime);
 	return true;
 }
 

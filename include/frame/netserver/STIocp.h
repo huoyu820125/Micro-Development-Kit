@@ -50,9 +50,9 @@ public:
 	};
 	typedef struct IO_EVENT
 	{
-		SOCKET sock;
+		int sock;
 		EventType type;
-		SOCKET client;
+		int client;
 		char *pData;
 		unsigned short uDataSize;
 	}IO_EVENT;
@@ -86,7 +86,7 @@ public:
 		 */
 		unsigned long m_dwRemoteAddressLength;
 		WSABUF m_wsaBuffer;//WSARecv接收缓冲数据,传递给WSARecv()的第2个参数
-		SOCKET sock;
+		int sock;
 		EventType completiontype;//完成类型1recv 2send
 	}IOCP_OVERLAPPED;
 public:
@@ -98,21 +98,21 @@ public:
 	//停止监听
 	bool Stop();
 	//增加一个监听对象
-	bool AddMonitor( SOCKET socket );
+	bool AddMonitor( int socket, char* pData, unsigned short dataSize );
 	//等待事件，失败返回false,超时sockEvent.type = STIocp::timeout,外部调用了Stop()，sockEvent.type = STIocp::stop
 	//timeout超时时间：INFINITE不超时，0不等待，>0超时时间单位(千分之一秒)
 	bool WaitEvent( IO_EVENT &sockEvent, int timeout );
 	//增加一个接受连接的操作，有连接进来，WaitEvent会返回
-	bool AddAccept(SOCKET listenSocket);
+	bool AddAccept(int listenSocket);
 	//增加一个接收数据的操作，有数据到达，WaitEvent会返回
-	bool AddRecv( SOCKET socket, char* recvBuf, unsigned short bufSize );
+	bool AddRecv( int socket, char* recvBuf, unsigned short bufSize );
 	//增加一个发送数据的操作，发送完成，WaitEvent会返回
-	bool AddSend( SOCKET socket, char* dataBuf, unsigned short dataSize );
+	bool AddSend( int socket, char* dataBuf, unsigned short dataSize );
 protected:
-	int GetError(SOCKET sock, WSAOVERLAPPED* pWSAOVERLAPPED)  ;
+	int GetError(int sock, WSAOVERLAPPED* pWSAOVERLAPPED)  ;
 		
 private:
-	SOCKET m_listenSocket;
+	int m_listenSocket;
 	HANDLE m_hCompletPort;//完成端口句柄
 	int m_nCPUCount;
 	IOCP_OVERLAPPED m_olExit;

@@ -97,4 +97,8 @@ HostData* NetHost::GetData()
 	return m_pConnect->GetData();
 }
 
+void* NetHost::GetSvrInfo()
+{
+	return m_pConnect->GetSvrInfo();
+}
 }  // namespace mdk

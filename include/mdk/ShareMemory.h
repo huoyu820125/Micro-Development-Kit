@@ -7,7 +7,9 @@
 
 #ifdef WIN32
 #pragma warning(disable:4996)
-#include <windows.h>
+//ÎªÁË²»include <windows.h>
+typedef void *HANDLE;
+
 #else
 #include <sys/types.h>
 #include <sys/shm.h>// for void *shmat(int shmid, const void *shmaddr, int shmflg);

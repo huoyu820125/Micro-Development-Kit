@@ -25,27 +25,27 @@ bool NetEventMonitor::Stop()
 	return true;
 }
 
-bool NetEventMonitor::AddMonitor( SOCKET socket, char* pData, unsigned short dataSize )
+bool NetEventMonitor::AddMonitor( int socket, char* pData, unsigned short dataSize )
 {
 	return true;
 }
 
-bool NetEventMonitor::AddConnectMonitor( SOCKET sock )
+bool NetEventMonitor::AddConnectMonitor( int sock )
 {
 	return false;
 }
 
-bool NetEventMonitor::AddDataMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+bool NetEventMonitor::AddDataMonitor( int sock, char* pData, unsigned short dataSize )
 {
 	return false;
 }
 
-bool NetEventMonitor::AddSendableMonitor( SOCKET sock, char* pData, unsigned short dataSize )
+bool NetEventMonitor::AddSendableMonitor( int sock, char* pData, unsigned short dataSize )
 {
 	return false;
 }
 
-bool NetEventMonitor::DelMonitor( SOCKET socket )
+bool NetEventMonitor::DelMonitor( int socket )
 {
 	return true;
 }
@@ -55,17 +55,17 @@ bool NetEventMonitor::WaitEvent( void *eventArray, int &count, bool block )
 	return true;
 }
 
-bool NetEventMonitor::AddAccept(SOCKET socket)
+bool NetEventMonitor::AddAccept(int socket)
 {
 	return true;
 }
 
-bool NetEventMonitor::AddRecv( SOCKET socket, char* pData, unsigned short dataSize )
+bool NetEventMonitor::AddRecv( int socket, char* pData, unsigned short dataSize )
 {
 	return true;
 }
 
-bool NetEventMonitor::AddSend( SOCKET socket, char* pData, unsigned short dataSize )
+bool NetEventMonitor::AddSend( int socket, char* pData, unsigned short dataSize )
 {
 	return true;
 }

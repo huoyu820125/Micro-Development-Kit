@@ -6,7 +6,6 @@
 #define MDK_LOCK_H
 
 #ifdef WIN32
-#include <windows.h>
 #else
 #include <pthread.h>
 #endif
@@ -15,7 +14,12 @@ namespace mdk
 {
 
 #ifdef WIN32
-#define OriginalMutex CRITICAL_SECTION
+//为了不包含windows.h,定义一个绝对大于CRITICAL_SECTION的buffer
+typedef struct CS_BUFFER
+{
+	char	buffer[64];
+}CS_BUFFER;
+#define OriginalMutex CS_BUFFER
 #else
 	typedef pthread_mutex_t OriginalMutex;//互斥锁
 #endif

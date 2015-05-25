@@ -75,7 +75,7 @@ protected:
 	ThreadPool m_workThreads;//业务线程池
 	int m_workThreadCount;//业务线程数量
 	NetServer *m_pNetServer;
-	std::map<int,SOCKET> m_serverPorts;//提供服务的端口,key端口，value状态监听这个端口的套接字
+	std::map<int,int> m_serverPorts;//提供服务的端口,key端口，value状态监听这个端口的套接字
 	Mutex m_listenMutex;//监听操作互斥
 
 	typedef struct SVR_CONNECT
@@ -87,11 +87,12 @@ protected:
 				unconnectting = 2,
 				connected = 3,
 		};
-		SOCKET sock;				//句柄
+		int sock;				//句柄
 		uint64 addr;				//地址
 		int reConnectSecond;		//重链时间，小于0表示不重链
 		time_t lastConnect;			//上次尝试链接时间
 		ConnectState state;			//链接状态
+		void *pSvrInfo;				//服务信息
 #ifndef WIN32
 		bool inEpoll;				//在epoll中
 #endif
@@ -105,7 +106,7 @@ protected:
 	virtual void* NetMonitor( void* ) = 0;
 	void* RemoteCall NetMonitorTask( void* );
 	//响应连接事件,sock为新连接的套接字
-	bool OnConnect( SOCKET sock, bool isConnectServer );
+	bool OnConnect( int sock, SVR_CONNECT *pSvr = NULL );
 	void* RemoteCall ConnectWorker( NetConnect *pConnect );//业务层处理连接
 	//响应关闭事件，sock为关闭的套接字
 	void OnClose( int64 connectId );
@@ -123,7 +124,7 @@ protected:
 	void* RemoteCall MsgWorker( NetConnect *pConnect );//业务层处理消息
 	connectState OnSend( int64 connectId, unsigned short uSize );//响应发送事件
 	virtual connectState SendData(NetConnect *pConnect, unsigned short uSize);//发送数据
-	virtual SOCKET ListenPort(int port);//监听一个端口,返回创建的套接字
+	virtual int ListenPort(int port);//监听一个端口,返回创建的套接字
 	//向某组连接广播消息(业务层接口)
 	void BroadcastMsg( int *recvGroupIDs, int recvCount, char *msg, unsigned int msgsize, int *filterGroupIDs, int filterCount );
 	bool SendMsg( int64 hostID, char *msg, unsigned int msgsize );//向某主机发送消息(业务层接口)
@@ -148,12 +149,12 @@ private:
 		invalidParam = 3,
 		faild = 4,
 	};
-	NetEngine::ConnectResult ConnectOtherServer(const char* ip, int port, SOCKET &svrSock);//异步连接一个服务,立刻成功返回true，否则返回false，等待select结果
+	NetEngine::ConnectResult ConnectOtherServer(const char* ip, int port, int &svrSock);//异步连接一个服务,立刻成功返回true，否则返回false，等待select结果
 	bool ConnectAll();//连接所有注册的服务，已连接的会自动跳过
 	void SetServerClose(NetConnect *pConnect);//设置已连接的服务为关闭状态
 	const char* GetInitError();//取得启动错误信息
 	void* RemoteCall ConnectThread(void*);//异步链接线程
-	NetEngine::ConnectResult AsycConnect( SOCKET svrSock, const char *lpszHostAddress, unsigned short nHostPort );
+	NetEngine::ConnectResult AsycConnect( int svrSock, const char *lpszHostAddress, unsigned short nHostPort );
 	bool EpollConnect( SVR_CONNECT **clientList, int clientCount );//clientCount个连接全部收到结果，返回true,否则返回false
 	bool SelectConnect( SVR_CONNECT **clientList, int clientCount );//clientCount个连接全部收到结果，返回true,否则返回false
 	bool ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool sendable, int api, int errorCode );//链接已完成返回true（不表示成功，失败也是完成，外部不需要处理，成功失败在内部已处理），否则返回false
@@ -196,7 +197,7 @@ public:
 	连接一个服务
 	reConnectTime < 0表示断开后不重新自动链接
 	*/
-	bool Connect(const char* ip, int port, int reConnectTime);
+	bool Connect(const char* ip, int port, void *pSvrInfo, int reConnectTime);
 #ifndef WIN32
 	int m_hEPoll;
 	epoll_event *m_events;

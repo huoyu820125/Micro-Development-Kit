@@ -41,7 +41,7 @@ void* IOCPFrame::NetMonitor( void* )
 		switch( e->type )
 		{
 		case IOCPMonitor::connect :
-			OnConnect( e->client, false );
+			OnConnect( e->client );
 			break;
 		case IOCPMonitor::recv :
 			OnData( e->connectId, e->pData, e->uDataSize );
@@ -124,7 +124,7 @@ connectState IOCPFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 	return ok;
 }
 
-SOCKET IOCPFrame::ListenPort(int port)
+int IOCPFrame::ListenPort(int port)
 {
 	Socket listenSock;//¼àÌýsocket
 	if ( !listenSock.Init( Socket::tcp ) ) return INVALID_SOCKET;

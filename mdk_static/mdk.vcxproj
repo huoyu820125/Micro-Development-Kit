@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <SccProjectName />
+    <SccLocalPath />
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\..\lib\</OutDir>
+    <IntDir>.\Release\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\..\lib\</OutDir>
+    <IntDir>.\Debug\</IntDir>
+    <TargetName>$(ProjectName)_d</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\Release\mdk.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\Release\</ObjectFileName>
+      <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\..\lib\mdk.bsc</OutputFile>
+    </Bscmake>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\..\lib\mdk.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\Debug\mdk.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\Debug\</ObjectFileName>
+      <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\..\lib\mdk.bsc</OutputFile>
+    </Bscmake>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>..\lib\mdk_d.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\frame\netserver\STEpoll.h" />
+    <ClInclude Include="..\include\frame\netserver\STIocp.h" />
+    <ClInclude Include="..\include\frame\netserver\STNetConnect.h" />
+    <ClInclude Include="..\include\frame\netserver\STNetEngine.h" />
+    <ClInclude Include="..\include\frame\netserver\STNetHost.h" />
+    <ClInclude Include="..\include\frame\netserver\STNetServer.h" />
+    <ClInclude Include="..\include\mdk\atom.h" />
+    <ClInclude Include="..\include\mdk\ConfigFile.h" />
+    <ClInclude Include="..\include\mdk\Executor.h" />
+    <ClInclude Include="..\include\mdk\FinishedTime.h" />
+    <ClInclude Include="..\include\mdk\FixLengthInt.h" />
+    <ClInclude Include="..\include\mdk\IOBuffer.h" />
+    <ClInclude Include="..\include\mdk\IOBufferBlock.h" />
+    <ClInclude Include="..\include\mdk\Lock.h" />
+    <ClInclude Include="..\include\mdk\Logger.h" />
+    <ClInclude Include="..\include\mdk\mapi.h" />
+    <ClInclude Include="..\include\mdk\MemoryPool.h" />
+    <ClInclude Include="..\include\mdk\Queue.h" />
+    <ClInclude Include="..\include\mdk\SharedPtr.h" />
+    <ClInclude Include="..\include\mdk\ShareMemory.h" />
+    <ClInclude Include="..\include\mdk\Signal.h" />
+    <ClInclude Include="..\include\mdk\Socket.h" />
+    <ClInclude Include="..\include\mdk\SRWLock.h" />
+    <ClInclude Include="..\include\mdk\Task.h" />
+    <ClInclude Include="..\include\mdk\Thread.h" />
+    <ClInclude Include="..\include\mdk\ThreadPool.h" />
+    <ClInclude Include="..\include\frame\netserver\EpollFrame.h" />
+    <ClInclude Include="..\include\frame\netserver\EpollMonitor.h" />
+    <ClInclude Include="..\include\frame\netserver\HostData.h" />
+    <ClInclude Include="..\include\frame\netserver\IOCPFrame.h" />
+    <ClInclude Include="..\include\frame\netserver\IOCPMonitor.h" />
+    <ClInclude Include="..\include\frame\netserver\NetConnect.h" />
+    <ClInclude Include="..\include\frame\netserver\NetEngine.h" />
+    <ClInclude Include="..\include\frame\netserver\NetEventMonitor.h" />
+    <ClInclude Include="..\include\frame\netserver\NetHost.h" />
+    <ClInclude Include="..\include\frame\netserver\NetServer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\source\frame\netserver\STEpoll.cpp" />
+    <ClCompile Include="..\source\frame\netserver\STIocp.cpp" />
+    <ClCompile Include="..\source\frame\netserver\STNetConnect.cpp" />
+    <ClCompile Include="..\source\frame\netserver\STNetEngine.cpp" />
+    <ClCompile Include="..\source\frame\netserver\STNetHost.cpp" />
+    <ClCompile Include="..\source\frame\netserver\STNetServer.cpp" />
+    <ClCompile Include="..\source\mdk\atom.cpp" />
+    <ClCompile Include="..\source\mdk\ConfigFile.cpp" />
+    <ClCompile Include="..\source\mdk\Executor.cpp" />
+    <ClCompile Include="..\source\mdk\FinishedTime.cpp" />
+    <ClCompile Include="..\source\mdk\IOBuffer.cpp" />
+    <ClCompile Include="..\source\mdk\IOBufferBlock.cpp" />
+    <ClCompile Include="..\source\mdk\Lock.cpp" />
+    <ClCompile Include="..\source\mdk\Logger.cpp" />
+    <ClCompile Include="..\source\mdk\mapi.cpp" />
+    <ClCompile Include="..\source\mdk\MemoryPool.cpp" />
+    <ClCompile Include="..\source\mdk\Queue.cpp" />
+    <ClCompile Include="..\source\mdk\ShareMemory.cpp" />
+    <ClCompile Include="..\source\mdk\Signal.cpp" />
+    <ClCompile Include="..\source\mdk\Socket.cpp" />
+    <ClCompile Include="..\source\mdk\SRWLock.cpp" />
+    <ClCompile Include="..\source\mdk\Task.cpp" />
+    <ClCompile Include="..\source\mdk\Thread.cpp" />
+    <ClCompile Include="..\source\mdk\ThreadPool.cpp" />
+    <ClCompile Include="..\source\frame\netserver\EpollFrame.cpp" />
+    <ClCompile Include="..\source\frame\netserver\EpollMonitor.cpp" />
+    <ClCompile Include="..\source\frame\netserver\HostData.cpp" />
+    <ClCompile Include="..\source\frame\netserver\IOCPFrame.cpp" />
+    <ClCompile Include="..\source\frame\netserver\IOCPMonitor.cpp" />
+    <ClCompile Include="..\source\frame\netserver\NetConnect.cpp" />
+    <ClCompile Include="..\source\frame\netserver\NetEngine.cpp" />
+    <ClCompile Include="..\source\frame\netserver\NetEventMonitor.cpp" />
+    <ClCompile Include="..\source\frame\netserver\NetHost.cpp" />
+    <ClCompile Include="..\source\frame\netserver\NetServer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="makefile">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
