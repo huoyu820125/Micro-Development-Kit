@@ -3,7 +3,10 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "../../../include/frame/netserver/IOCPMonitor.h"
+
+
 #ifdef WIN32
+#include "../../../include/frame/netserver/MsWinsockUtil.h"
 #pragma comment ( lib, "mswsock.lib" )
 #pragma comment ( lib, "ws2_32.lib" )
 #endif
@@ -179,7 +182,9 @@ bool IOCPMonitor::AddAccept( int listenSocket )
 	pOverlapped->sock = client.GetSocket();
 	pOverlapped->completiontype = IOCPMonitor::connect;
 	//投递接受连接操作
-	if ( !AcceptEx( listenSocket,
+	//AcceptEx 当recvdatalength = 0时，直接返回
+	//
+	if ( !MsWinsockUtil::m_lpfnAccepteEx( listenSocket,
 		client.GetSocket(), 
 		pOverlapped->m_outPutBuf, 0,
 		pOverlapped->m_dwLocalAddressLength, 

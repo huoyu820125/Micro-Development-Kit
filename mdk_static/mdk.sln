@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdk", "mdk.vcxproj", "{76547DAD-4F20-D697-00A0-377619730955}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "main", "..\example\main.vcxproj", "{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client", "..\example\client\Client.vcxproj", "{D287B92C-517B-A0DB-82D7-40E0C7497254}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+		Template|Win32 = Template|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76547DAD-4F20-D697-00A0-377619730955}.Debug|Win32.ActiveCfg = Debug|Win32
+		{76547DAD-4F20-D697-00A0-377619730955}.Debug|Win32.Build.0 = Debug|Win32
+		{76547DAD-4F20-D697-00A0-377619730955}.Release|Win32.ActiveCfg = Release|Win32
+		{76547DAD-4F20-D697-00A0-377619730955}.Release|Win32.Build.0 = Release|Win32
+		{76547DAD-4F20-D697-00A0-377619730955}.Template|Win32.ActiveCfg = Release|Win32
+		{76547DAD-4F20-D697-00A0-377619730955}.Template|Win32.Build.0 = Release|Win32
+		{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}.Debug|Win32.Build.0 = Debug|Win32
+		{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}.Release|Win32.ActiveCfg = Release|Win32
+		{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}.Release|Win32.Build.0 = Release|Win32
+		{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}.Template|Win32.ActiveCfg = Release|Win32
+		{C8E527EA-1323-3E1C-A695-0D8CDFAD4006}.Template|Win32.Build.0 = Release|Win32
+		{D287B92C-517B-A0DB-82D7-40E0C7497254}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D287B92C-517B-A0DB-82D7-40E0C7497254}.Debug|Win32.Build.0 = Debug|Win32
+		{D287B92C-517B-A0DB-82D7-40E0C7497254}.Release|Win32.ActiveCfg = Release|Win32
+		{D287B92C-517B-A0DB-82D7-40E0C7497254}.Release|Win32.Build.0 = Release|Win32
+		{D287B92C-517B-A0DB-82D7-40E0C7497254}.Template|Win32.ActiveCfg = Template|Win32
+		{D287B92C-517B-A0DB-82D7-40E0C7497254}.Template|Win32.Build.0 = Template|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

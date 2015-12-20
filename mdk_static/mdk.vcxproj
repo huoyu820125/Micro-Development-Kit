@@ -91,6 +91,7 @@
       <ObjectFileName>.\Debug\</ObjectFileName>
       <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <AdditionalIncludeDirectories>..\..\google-breakpad\src</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0804</Culture>
@@ -103,15 +104,19 @@
     <Lib>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>..\lib\mdk_d.lib</OutputFile>
+      <AdditionalLibraryDirectories>..\..\google-breakpad\src\client\windows\Debug\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>common.lib;crash_generation_client.lib;crash_generation_server.lib;crash_report_sender.lib;gmock.lib;exception_handler.lib;gtest.lib;processor_bits.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\frame\netserver\MsWinsockUtil.h" />
     <ClInclude Include="..\include\frame\netserver\STEpoll.h" />
     <ClInclude Include="..\include\frame\netserver\STIocp.h" />
     <ClInclude Include="..\include\frame\netserver\STNetConnect.h" />
     <ClInclude Include="..\include\frame\netserver\STNetEngine.h" />
     <ClInclude Include="..\include\frame\netserver\STNetHost.h" />
     <ClInclude Include="..\include\frame\netserver\STNetServer.h" />
+    <ClInclude Include="..\include\google_breakpad\CrashHandler.h" />
     <ClInclude Include="..\include\mdk\atom.h" />
     <ClInclude Include="..\include\mdk\ConfigFile.h" />
     <ClInclude Include="..\include\mdk\Executor.h" />
@@ -121,12 +126,14 @@
     <ClInclude Include="..\include\mdk\IOBufferBlock.h" />
     <ClInclude Include="..\include\mdk\Lock.h" />
     <ClInclude Include="..\include\mdk\Logger.h" />
+    <ClInclude Include="..\include\mdk\macrodefine.h" />
     <ClInclude Include="..\include\mdk\mapi.h" />
     <ClInclude Include="..\include\mdk\MemoryPool.h" />
     <ClInclude Include="..\include\mdk\Queue.h" />
     <ClInclude Include="..\include\mdk\SharedPtr.h" />
     <ClInclude Include="..\include\mdk\ShareMemory.h" />
     <ClInclude Include="..\include\mdk\Signal.h" />
+    <ClInclude Include="..\include\mdk\Singleton.h" />
     <ClInclude Include="..\include\mdk\Socket.h" />
     <ClInclude Include="..\include\mdk\SRWLock.h" />
     <ClInclude Include="..\include\mdk\Task.h" />
@@ -144,12 +151,14 @@
     <ClInclude Include="..\include\frame\netserver\NetServer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\source\frame\netserver\MsWinsockUtil.cpp" />
     <ClCompile Include="..\source\frame\netserver\STEpoll.cpp" />
     <ClCompile Include="..\source\frame\netserver\STIocp.cpp" />
     <ClCompile Include="..\source\frame\netserver\STNetConnect.cpp" />
     <ClCompile Include="..\source\frame\netserver\STNetEngine.cpp" />
     <ClCompile Include="..\source\frame\netserver\STNetHost.cpp" />
     <ClCompile Include="..\source\frame\netserver\STNetServer.cpp" />
+    <ClCompile Include="..\source\google_breakpad\CrashHandler.cpp" />
     <ClCompile Include="..\source\mdk\atom.cpp" />
     <ClCompile Include="..\source\mdk\ConfigFile.cpp" />
     <ClCompile Include="..\source\mdk\Executor.cpp" />

@@ -252,7 +252,8 @@ void NetConnect::SetData( HostData *pData, bool autoFree )
 
 	if ( NULL == pData ) return;
 
-	if ( -1 == AtomAdd(&pData->m_refCount, 1) ) return; //有线程完成了Release()的释放检查，对象即将被释放，放弃关联
+	//有线程完成了Release()的释放检查，对象即将被释放，放弃关联
+	if ( -1 == AtomAdd(&pData->m_refCount, 1) ) return; 
 	pData->m_autoFree = autoFree;
 	/*
 		autoFree = true

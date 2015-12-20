@@ -6,7 +6,7 @@
 #include "../../../include/frame/netserver/IOCPFrame.h"
 #include "../../../include/frame/netserver/NetConnect.h"
 #include "../../../include/mdk/atom.h"
-
+#include "../../../include/frame/netserver/MsWinsockUtil.h"
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -138,6 +138,9 @@ int IOCPFrame::ListenPort(int port)
 		listenSock.Close();
 		return INVALID_SOCKET;
 	}
+
+	//»ñÈ¡AcceptExeº¯Êý
+	MsWinsockUtil::LoadExtensionFunction(listenSock.GetSocket());
 	int i = 0;
 	for ( ; i < 500; i++ ) 
 	{

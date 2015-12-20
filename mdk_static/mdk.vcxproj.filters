@@ -12,6 +12,9 @@
     <Filter Include="frame\netserver">
       <UniqueIdentifier>{d939f0d7-116e-47d2-86c5-1219340ce654}</UniqueIdentifier>
     </Filter>
+    <Filter Include="google_breakpad">
+      <UniqueIdentifier>{7884919b-d49a-4611-b251-21ac9478c943}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mdk\atom.h">
@@ -122,6 +125,18 @@
     <ClInclude Include="..\include\frame\netserver\STNetServer.h">
       <Filter>frame\netserver</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\frame\netserver\MsWinsockUtil.h">
+      <Filter>frame\netserver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\google_breakpad\CrashHandler.h">
+      <Filter>google_breakpad</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mdk\Singleton.h">
+      <Filter>mdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mdk\macrodefine.h">
+      <Filter>mdk</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\mdk\ConfigFile.cpp">
@@ -225,6 +240,12 @@
     </ClCompile>
     <ClCompile Include="..\source\frame\netserver\STNetServer.cpp">
       <Filter>frame\netserver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\frame\netserver\MsWinsockUtil.cpp">
+      <Filter>frame\netserver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\google_breakpad\CrashHandler.cpp">
+      <Filter>google_breakpad</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

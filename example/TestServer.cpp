@@ -8,6 +8,7 @@
 #ifndef WIN32
 #include <unistd.h>
 #endif
+#include <Windows.h>
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -19,7 +20,7 @@ TestServer::TestServer()
 	Listen(8888);
 //	Listen(6666);
 //	Listen(9999);
-//	Connect("127.0.0.1", 10086, 5);//连接自身，未测试，不建议这么做
+	Connect("10.10.10.82", 5678,NULL, 5);//连接自身，未测试，不建议这么做
 }
 
 TestServer::~TestServer()
@@ -49,6 +50,9 @@ void* TestServer::Main(void* pParam)
  * 新连接事件回调方法
  * 
  * 派生类实现具体连接业务处理
+ * 当连接其他服务器时，可以host.IsServer来判断是否为一个服务器。
+ * 操作同玩家操作一样。。
+ *
  * 
  */
 void TestServer::OnConnect(mdk::NetHost& host)

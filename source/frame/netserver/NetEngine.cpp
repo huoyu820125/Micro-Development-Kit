@@ -641,8 +641,8 @@ NetEngine::ConnectResult NetEngine::ConnectOtherServer(const char* ip, int port,
 	if ( !sock.Init( Socket::tcp ) ) return NetEngine::cannotCreateSocket;
 	sock.SetSockMode();
 // 	bool successed = sock.Connect(ip, port);
-	svrSock = sock.Detach();
-	return AsycConnect(svrSock, ip, port);
+	svrSock = sock.Detach();					//清除sock相关数据
+	return AsycConnect(svrSock, ip, port);		//
 }
 
 bool NetEngine::ConnectAll()

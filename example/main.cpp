@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <Windows.h>
 using namespace std;
 
 #ifdef WIN32
@@ -18,6 +19,7 @@ using namespace std;
 #endif
 #endif
 
+
 int main()
 {
 	TestServer ser;
@@ -25,7 +27,7 @@ int main()
 	ser.Start();
 	ser.WaitStop();
 	printf( "exit\n" );
-	return 0;
-	
+
+
 	return 0;
 }

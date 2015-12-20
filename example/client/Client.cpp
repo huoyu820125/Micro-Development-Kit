@@ -6,6 +6,8 @@ using namespace mdk;
 
 #include <map>
 using namespace std;
+
+
 typedef struct THREAD_CONTROL
 {
 	DWORD dwID;

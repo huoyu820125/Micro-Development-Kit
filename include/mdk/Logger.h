@@ -25,6 +25,8 @@ public:
 	//如果构造函数已经传递了日志名,则此方法不能再设置
 	bool SetLogName( const char *name );
 	void SetPrintLog( bool bPrint );//写日志时，是否同时打印到控制台
+	
+	//findkey是为了方便查找字节写的字符
 	bool Info( const char *findKey, const char *format, ... );//输出信息，输出格式为 时间+空格+(findKey)+空格+(Tid:线程ID)+空格+参数传入信息
 	bool StreamInfo( const char *findKey, unsigned char *stream, int nLen, const char *format, ...  );//输出带数据流的日至信息, stream数据将接在format信息之后输出，以stream:为标记
 	void SetMaxLogSize( int maxLogSize );//设置单个日志文件最大尺寸，单位M
