@@ -310,7 +310,7 @@ connectState EpollFrame::SendData(NetConnect *pConnect, unsigned short uSize)
 			cs = wait_send;
 		}
 		nFinishedSize = pConnect->GetSocket()->Send((char*)buf, nSize);//发送
-		if ( 0 > nFinishedSize ) cs = unconnect;
+		if ( Socket::seError == nFinishedSize ) cs = unconnect;
 		else
 		{
 			pConnect->m_sendBuffer.ReadData(buf, nFinishedSize);//将发送成功的数据从缓冲清除

@@ -123,7 +123,7 @@ bool NetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 	{
 		nSendSize = m_socket.Send( pMsg, uLength );
 	}
-	if ( -1 == nSendSize ) return false;//发生错误，连接可能已断开
+	if ( Socket::seError == nSendSize ) return false;//发生错误，连接可能已断开
 	if ( uLength == nSendSize ) return true;//所有数据已发送，返回成功
 	
 	//数据加入发送缓冲，交给底层去发送

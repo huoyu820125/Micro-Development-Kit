@@ -35,7 +35,7 @@ Mutex::Mutex()
 #ifdef WIN32
 	InitializeCriticalSection( (CRITICAL_SECTION*)&m_mutex );
 #else
-	int kind = PTHREAD_MUTEX_FAST_NP;
+	int kind = PTHREAD_MUTEX_RECURSIVE_NP;
 	pthread_mutexattr_t mutexattr;//ª•≥‚¡ø Ù–‘
 	
 	int nError = 0;

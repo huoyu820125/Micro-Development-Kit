@@ -1,7 +1,4 @@
-V1.94(2015-05-12 10:00)
-1.NetServer::Connect()接口增加参数svrInfo,给连接绑定一个信息
-当OnConnect(host)触发时,可以用host.GetSvrInfo()取出来(GetSvrInfo()也是NetHost新增接口)
-就可以知道host是代码的哪个服务,免得再去取host的ip port作比较来确定服务器类型
-
-2.去掉对windows.h的依赖,mdk头文件不再受包含顺序限制
-
+V1.96(2016-04-6 12:46)
+1.NetConnect::SendData() 崩溃bug
+2.Lock改成递归锁
+3.ConfigFile int64字段取值修正

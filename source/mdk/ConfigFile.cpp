@@ -377,12 +377,16 @@ CFGItem::operator unsigned int()
 
 CFGItem::operator int64()
 {
-	return atoi(m_value.c_str());
+	int64 nInt;
+	sscanf(m_value.c_str(), "%lld", &nInt);
+	return nInt;
 }
 
 CFGItem::operator uint64()
 {
-	return atoi(m_value.c_str());
+	uint64 uInt;
+	sscanf(m_value.c_str(), "%llu", &uInt);
+	return uInt;
 }
 
 CFGItem::operator float()
