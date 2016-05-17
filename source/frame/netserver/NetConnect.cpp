@@ -14,7 +14,7 @@ using namespace std;
 namespace mdk
 {
 
-NetConnect::NetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool)
+NetConnect::NetConnect(int sock, int listenSock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool)
 :m_socket(sock,Socket::tcp)
 {
 	m_pMemoryPool = pMemoryPool;
@@ -32,7 +32,7 @@ NetConnect::NetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, N
 	m_nDoCloseWorkCount = 0;//没有执行过NetServer::OnClose()
 	m_bIsServer = bIsServer;
 #ifdef WIN32
-	Socket::InitForIOCP(sock);
+	Socket::InitForIOCP(sock, listenSock);
 #endif
 	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();

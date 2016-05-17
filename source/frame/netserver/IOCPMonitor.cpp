@@ -145,6 +145,7 @@ bool IOCPMonitor::WaitEvent( void *eventArray, int &count, bool block )
 		if ( IOCPMonitor::connect == pOverlapped->completiontype )
 		{
 			AddAccept( sock );
+			events[count].listenSock = sock;
 		}
 		//ioÊÂ¼þ
 		events[count].connectId = pOverlapped->connectId;

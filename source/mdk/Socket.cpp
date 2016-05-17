@@ -100,12 +100,12 @@ void Socket::GetLastErrorMsg( std::string &strError )
 #endif
 }
 
-bool Socket::InitForIOCP( int hSocket )
+bool Socket::InitForIOCP( int hSocket, int listenSock )
 {
 #ifdef WIN32
 	return 0 == setsockopt( hSocket,
 		SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
-		(char *)&(hSocket), sizeof(hSocket) );
+		(char *)&(listenSock), sizeof(listenSock) );
 #else
 	return true;
 #endif

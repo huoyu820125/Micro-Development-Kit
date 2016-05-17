@@ -17,7 +17,7 @@ unsigned int g_r = 0;
 namespace mdk
 {
 
-STNetConnect::STNetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool)
+STNetConnect::STNetConnect(int sock, int listenSock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool)
 :m_socket(sock,Socket::tcp)
 {
 	m_pMemoryPool = pMemoryPool;
@@ -35,7 +35,7 @@ STNetConnect::STNetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonito
 	m_nDoCloseWorkCount = 0;//没有执行过NetServer::OnClose()
 	m_bIsServer = bIsServer;
 #ifdef WIN32
-	Socket::InitForIOCP(sock);	
+	Socket::InitForIOCP(sock, listenSock);	
 #endif
 	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();

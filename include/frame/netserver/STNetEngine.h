@@ -101,7 +101,7 @@ protected:
 	//linux下网络io处理
 	bool LinuxIO(int timeout);
 	//响应连接事件,sock为新连接的套接字
-	bool OnConnect( int sock, SVR_CONNECT *pSvr = NULL );
+	bool OnConnect( int sock, int listenSock, SVR_CONNECT *pSvr = NULL );
 	//响应关闭事件，sock为关闭的套接字
 	void OnClose( int sock );
 	void NotifyOnClose(STNetConnect *pConnect);//发出OnClose通知

@@ -51,6 +51,7 @@ public:
 		int client;
 		char *pData;
 		unsigned short uDataSize;
+		int	listenSock;
 	}IO_EVENT;
 public:
 	MemoryPool m_iocpDataPool;//iocpÍ¶µÝ²ÎÊý³Ø

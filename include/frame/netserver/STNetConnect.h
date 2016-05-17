@@ -26,7 +26,7 @@ class STNetConnect
 	friend class STNetEngine;
 	friend class STNetHost;
 public:
-	STNetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool);
+	STNetConnect(int sock, int listenSock, bool bIsServer, NetEventMonitor *pNetMonitor, STNetEngine *pEngine, MemoryPool *pMemoryPool);
 	virtual ~STNetConnect();
 
 	/*

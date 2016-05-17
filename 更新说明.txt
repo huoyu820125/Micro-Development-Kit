@@ -1,4 +1,31 @@
-V1.96(2016-04-6 12:46)
-1.NetConnect::SendData() 崩溃bug
-2.Lock改成递归锁
-3.ConfigFile int64字段取值修正
+V1.97(2016-05-17 10:58)
+1.修正SO_UPDATE_ACCEPT_CONTEXT用法错误
+此错误会导致getpeername()和getsockname()取到的地址可能不正确
+
+修正如下
+Socket::InitForIOCP()增加listenSock参数，调用InitForIOCP的地方配合做相应修正
+bool Socket::InitForIOCP( int hSocket, int listenSock )
+{
+#ifdef WIN32
+	return 0 == setsockopt( hSocket,
+		SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
+		(char *)&(listenSock), sizeof(listenSock) );
+#else
+	return true;
+#endif
+}
+
+
+2.向外发起连接时候，如果不自动重连，在连接成功的情况下，没有释放连接参数
+NetEngine::ConnectAll()中增加以下代码，修正
+	if ( 0 > pSvr->reConnectSecond && SVR_CONNECT::connected == pSvr->state ) //已连接成功的，释放不需要重连的
+	{
+		itSvr = it->second.erase(itSvr);
+		delete pSvr;
+		continue;
+	}
+
+并将所有SVR_CONNECT::connected的设置移动到OnConnect()调用之后
+也就是pSvr被用完之后，以免OnConnect中还在访问pSvr时，上面新增代码将pSvr释放了
+	OnConnect(pSvr->sock, pSvr->sock, pSvr);
+	pSvr->state = SVR_CONNECT::connected;

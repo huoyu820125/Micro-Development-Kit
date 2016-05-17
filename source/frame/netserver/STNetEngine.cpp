@@ -119,7 +119,7 @@ bool STNetEngine::WINIO(int timeout)
 		return false;
 		break;
 	case STIocp::connect :
-		OnConnect( e.client );
+		OnConnect( e.client, e.sock );
 		m_pNetMonitor->AddAccept( e.sock );
 		break;
 	case STIocp::recv :
@@ -171,7 +171,7 @@ bool STNetEngine::LinuxIO( int timeout )
 				sockListen.Accept( sockClient );
 				if ( INVALID_SOCKET == sockClient.GetSocket() ) break;
 				sockClient.SetSockMode();
-				OnConnect(sockClient.Detach());
+				OnConnect(sockClient.Detach(), 0);
 			}
 			continue;
 		}
@@ -340,10 +340,10 @@ void STNetEngine::NotifyOnClose(STNetConnect *pConnect)
 	}
 }
 
-bool STNetEngine::OnConnect( int sock, SVR_CONNECT *pSvr )
+bool STNetEngine::OnConnect( int sock, int listenSock, SVR_CONNECT *pSvr )
 {
 	if ( m_noDelay ) Socket::SetNoDelay(sock, true);
-	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, 
+	STNetConnect *pConnect = new (m_pConnectPool->Alloc())STNetConnect(sock, listenSock, 
 		NULL == pSvr?false:true, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
@@ -657,8 +657,8 @@ bool STNetEngine::Connect(const char* ip, int port, void *pSvrInfo, int reConnec
 	ConnectResult ret = ConnectOtherServer(ip, port, pSvr->sock);
 	if ( STNetEngine::success == ret )
 	{
+		OnConnect(pSvr->sock, pSvr->sock, pSvr);
 		pSvr->state = SVR_CONNECT::connected;
-		OnConnect(pSvr->sock, pSvr);
 	}
 	else if ( STNetEngine::waitReulst == ret )
 	{
@@ -710,6 +710,12 @@ bool STNetEngine::ConnectAll()
 				|| SVR_CONNECT::unconnectting == pSvr->state 
 				) 
 			{
+				if ( 0 > pSvr->reConnectSecond && SVR_CONNECT::connected == pSvr->state ) //已连接成功的，释放不需要重连的
+				{
+					itSvr = it->second.erase(itSvr);
+					delete pSvr;
+					continue;
+				}
 				itSvr++;
 				continue;
 			}
@@ -729,8 +735,8 @@ bool STNetEngine::ConnectAll()
 			ConnectResult ret = ConnectOtherServer(ip, port, pSvr->sock);
 			if ( STNetEngine::success == ret )
 			{
+				OnConnect(pSvr->sock, pSvr->sock, pSvr);
 				pSvr->state = SVR_CONNECT::connected;
-				OnConnect(pSvr->sock, pSvr);
 			}
 			else if ( STNetEngine::waitReulst == ret )
 			{
@@ -1181,8 +1187,8 @@ bool STNetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool send
 		return true;
 	}
 
+	OnConnect(svrSock, svrSock, pSvr);
 	pSvr->state = SVR_CONNECT::connected;
-	OnConnect(svrSock, pSvr);
 	return true;
 }
 

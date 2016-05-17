@@ -232,7 +232,7 @@ public:
 	
 	//针对IOCP，可使用GetPeerName取地址信息
 	//※只能在Connect之后调用
-	static bool InitForIOCP( int hSocket );
+	static bool InitForIOCP( int hSocket, int listenSock );
 
 	/*
 		功能：绑定一个socket句柄，让该类对象在这个句柄上进行操作

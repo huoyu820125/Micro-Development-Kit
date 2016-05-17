@@ -317,10 +317,10 @@ void NetEngine::NotifyOnClose(NetConnect *pConnect)
 	}
 }
 
-bool NetEngine::OnConnect( int sock, SVR_CONNECT *pSvr )
+bool NetEngine::OnConnect( int sock, int listenSock, SVR_CONNECT *pSvr )
 {
 	if ( m_noDelay ) Socket::SetNoDelay(sock, true);
-	NetConnect *pConnect = new (m_pConnectPool->Alloc())NetConnect(sock, 
+	NetConnect *pConnect = new (m_pConnectPool->Alloc())NetConnect(sock, listenSock, 
 		NULL == pSvr?false:true, m_pNetMonitor, this, m_pConnectPool);
 	if ( NULL == pConnect ) 
 	{
@@ -617,8 +617,8 @@ bool NetEngine::Connect(const char* ip, int port, void *pSvrInfo, int reConnectT
 	ConnectResult ret = ConnectOtherServer(ip, port, pSvr->sock);
 	if ( NetEngine::success == ret )
 	{
+		OnConnect(pSvr->sock, pSvr->sock, pSvr);
 		pSvr->state = SVR_CONNECT::connected;
-		OnConnect(pSvr->sock, pSvr);
 	}
 	else if ( NetEngine::waitReulst == ret )
 	{
@@ -672,6 +672,12 @@ bool NetEngine::ConnectAll()
 				|| SVR_CONNECT::unconnectting == pSvr->state 
 				) 
 			{
+				if ( 0 > pSvr->reConnectSecond && SVR_CONNECT::connected == pSvr->state ) //已连接成功的，释放不需要重连的
+				{
+					itSvr = it->second.erase(itSvr);
+					delete pSvr;
+					continue;
+				}
 				itSvr++;
 				continue;
 			}
@@ -691,8 +697,8 @@ bool NetEngine::ConnectAll()
 			ConnectResult ret = ConnectOtherServer(ip, port, pSvr->sock);
 			if ( NetEngine::success == ret )
 			{
+				OnConnect(pSvr->sock, pSvr->sock, pSvr);
 				pSvr->state = SVR_CONNECT::connected;
-				OnConnect(pSvr->sock, pSvr);
 			}
 			else if ( NetEngine::waitReulst == ret )
 			{
@@ -1162,8 +1168,8 @@ bool NetEngine::ConnectIsFinished( SVR_CONNECT *pSvr, bool readable, bool sendab
 		return true;
 	}
 
+	OnConnect(svrSock, svrSock, pSvr);
 	pSvr->state = SVR_CONNECT::connected;
-	OnConnect(svrSock, pSvr);
 	return true;
 }
 

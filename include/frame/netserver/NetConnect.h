@@ -33,7 +33,7 @@ public:
 	friend class IOCPFrame;
 	friend class EpollFrame;
 public:
-	NetConnect(int sock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool);
+	NetConnect(int sock, int listenSock, bool bIsServer, NetEventMonitor *pNetMonitor, NetEngine *pEngine, MemoryPool *pMemoryPool);
 	virtual ~NetConnect();
 
 public:
