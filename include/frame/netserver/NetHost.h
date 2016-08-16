@@ -169,12 +169,18 @@ public:
 		主机地址
 		如果你在NetServer希望得到对方地址，应该调用本方法，而不是GetServerAddress
 		因为NetHost表示的就是对方主机，所以NetHost的主机地址就是对方地址
+		if 连接是使用127.0.0.1建立，则取到地址127.0.0.1
+		if 连接是使用内网地址建立，则取到内网地址
+		if 连接是使用外网地址建立，则取到外网地址
 	 */
 	void GetAddress( std::string &ip, int &port );//主机地址
 	/*
 		服务器地址
 		如果你希望知道对方主机连接到自己的哪个端口，应该调用本方法，而不是GetAddress]
 		因为GetAddress表示的是对方
+		if 连接是使用127.0.0.1建立，则取到地址127.0.0.1
+		if 连接是使用内网地址建立，则取到内网地址
+		if 连接是使用外网地址建立，则取到外网地址
 	 */
 	void GetServerAddress( std::string &ip, int &port );
 	/*
