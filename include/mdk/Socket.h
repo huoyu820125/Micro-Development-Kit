@@ -111,20 +111,20 @@ public:
 	/*
 		功能：调用库函数send发送数据
 		参数：
-			lpBuf	const void*	[In]	发送的数据
-			nBufLen	int		[In]	数据长度
-			nFlags	int		[In]	An indicator specifying the way in which the call is made
-		返回值：成功实际发送的字节数，失败返回-1
+		lpBuf	const void*	[In]	发送的数据
+		nBufLen	int		[In]	数据长度
+		nFlags	int		[In]	An indicator specifying the way in which the call is made
+		返回值：成功实际发送的字节数，失败返回小于0
 	*/
 	int Send( const void* lpBuf, int nBufLen, int nFlags = 0 );
 	/*
 		功能：接收数据
 		参数：
-			lpBuf		void*		[Out]	保存接收的数据
-			nBufLen		int			[Out]	收到数据的长度
-			lSecond		long		[In]	超时时间秒
-			lMinSecond	long		[In]	超时时间毫秒
-		返回值：实际接收到的字节数，超时返回-1
+		lpBuf		void*		[Out]	保存接收的数据
+		nBufLen		__int32		[Out]	收到数据的长度
+		lSecond		long		[In]	超时时间秒
+		lMinSecond	long		[In]	超时时间毫秒
+		返回值：实际接收到的字节数，超时返回-2，断开连接返回-1，其它错误返回-3
 	*/
 	int Receive( void* lpBuf, int nBufLen, bool bCheckDataLength = false, long lSecond = 0, long lMinSecond = 0 );
 
@@ -265,8 +265,6 @@ protected:
 		返回值：超时返回TRUE，否则返回FALSE
 	*/
 	bool TimeOut( long lSecond, long lMinSecond );
-	//功能：等待数据
-	bool WaitData();
 	/*
 		功能：从sockaddr结构转换成常见类型表示的地址
 		参数：

@@ -186,6 +186,10 @@ bool STIocp::AddAccept( int listenSocket )
 			return false;
 		}
 	}
+	else
+	{
+		return false;
+	}
 	
 	return true;
 	

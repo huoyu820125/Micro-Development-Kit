@@ -81,6 +81,8 @@ public:
 	void SetSvrInfo(void *pData);
 	//取服务信息
 	void* GetSvrInfo();
+	bool AddEpollSend();
+	bool AddEpollRecv();
 private:	
 	int m_useCount;//访问计数
 	IOBuffer m_recvBuffer;//接收缓冲
@@ -103,7 +105,8 @@ private:
 	std::map<int,int> m_groups;//所属分组
 	MemoryPool *m_pMemoryPool;
 	void *m_pSvrInfo;//服务信息，当NetConnect代表一个服务器时有效
-	
+	bool m_monitorSend;//监听发送
+	bool m_monitorRecv;//监听接收
 };
 
 }

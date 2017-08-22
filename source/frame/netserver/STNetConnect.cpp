@@ -9,7 +9,6 @@
 #include "../../../include/mdk/atom.h"
 #include "../../../include/mdk/MemoryPool.h"
 using namespace std;
-unsigned int g_r = 0;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -40,6 +39,8 @@ STNetConnect::STNetConnect(int sock, int listenSock, bool bIsServer, NetEventMon
 	m_socket.InitPeerAddress();
 	m_socket.InitLocalAddress();
 	m_pSvrInfo = NULL;
+	m_monitorSend = false;//监听发送
+	m_monitorRecv = false;//监听接收
 }
 
 
@@ -60,7 +61,6 @@ void STNetConnect::Release()
 		}
 		this->~STNetConnect();
 		m_pMemoryPool->Free(this);
-		AtomAdd(&g_r, 1);
 	}
 }
 
@@ -108,11 +108,10 @@ bool STNetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 	uint32 nSendSize = 0;
 	if ( 0 >= m_sendBuffer.GetLength() )//没有等待发送的数据，可直接发送
 	{
-		nSendSize = m_socket.Send( pMsg, uLength );
+ 		nSendSize = m_socket.Send( pMsg, uLength );
 	}
 	if ( Socket::seError == nSendSize ) return false;//发生错误，连接可能已断开
 	if ( uLength == nSendSize ) return true;//所有数据已发送，返回成功
-
 	//数据加入发送缓冲，交给底层去发送
 	uLength -= nSendSize;
 	while ( true )
@@ -138,9 +137,8 @@ bool STNetConnect::SendData( const unsigned char* pMsg, unsigned int uLength )
 #ifdef WIN32
 	m_pNetMonitor->AddSend( m_socket.GetSocket(), NULL, 0 );
 #else
-	//在STNetEngine::MsgWorker()中执行，一定是在RecvData()之后，所以绝对不会被
-	//m_pNetMonitor->AddIO( m_socket.GetSocket(), true, false );覆盖，不会遗漏发送请求
-	((STEpoll*)m_pNetMonitor)->AddIO( m_socket.GetSocket(), true, true );
+	AddEpollSend();//监听发送
+
 #endif
 	return true;
 }
@@ -224,6 +222,18 @@ void STNetConnect::SetSvrInfo(void *pData)
 void* STNetConnect::GetSvrInfo()
 {
 	return m_pSvrInfo;
+}
+
+bool STNetConnect::AddEpollSend()
+{
+	m_monitorSend = true;//监听发送
+	return ((STEpoll*)m_pNetMonitor)->AddIO( m_socket.GetSocket(), m_monitorRecv, m_monitorSend );
+}
+
+bool STNetConnect::AddEpollRecv()
+{
+	m_monitorRecv = true;//监听接收
+	return ((STEpoll*)m_pNetMonitor)->AddIO( m_socket.GetSocket(), m_monitorRecv, m_monitorSend );
 }
 
 }

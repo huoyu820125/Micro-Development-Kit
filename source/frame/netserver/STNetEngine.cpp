@@ -376,7 +376,7 @@ bool STNetEngine::OnConnect( int sock, int listenSock, SVR_CONNECT *pSvr )
 		(char*)(pConnect->PrepareBuffer(BUFBLOCK_SIZE)), 
 		BUFBLOCK_SIZE );
 #else
-	bMonitor = m_pNetMonitor->AddIO( sock, true, false );
+	bMonitor = pConnect->AddEpollRecv();
 #endif
 	if ( !bMonitor ) CloseConnect(pConnect->GetSocket()->GetSocket());
 	return true;
@@ -445,7 +445,7 @@ connectState STNetEngine::RecvData( STNetConnect *pConnect, char *pData, unsigne
 		if ( nRecvLen < 0 ) return unconnect;
 		if ( 0 == nRecvLen ) 
 		{
-			if ( !m_pNetMonitor->AddIO(pConnect->GetSocket()->GetSocket(), true, false) ) return unconnect;
+			if ( !pConnect->AddEpollRecv() ) return unconnect;
 			return wait_recv;
 		}
 		nMaxRecvSize += nRecvLen;
@@ -468,7 +468,8 @@ connectState STNetEngine::OnSend( int sock, unsigned short uSize )
 {
 	connectState cs = unconnect;
 	ConnectList::iterator itNetConnect = m_connectList.find(sock);
-	if ( itNetConnect == m_connectList.end() )return cs;//底层已经主动断开
+	if ( itNetConnect == m_connectList.end() ) return cs;//底层已经主动断开
+
 	STNetConnect *pConnect = itNetConnect->second;
 	STNetHost accessHost = pConnect->m_host;//被引擎访问，局部变量离开时，析构函数自动释放访问
 	if ( pConnect->m_bConnect ) cs = SendData(pConnect, uSize);
@@ -480,7 +481,10 @@ connectState STNetEngine::SendData(STNetConnect *pConnect, unsigned short uSize)
 {
 #ifdef WIN32
 	unsigned char buf[BUFBLOCK_SIZE];
-	if ( uSize > 0 ) pConnect->m_sendBuffer.ReadData(buf, uSize);
+	if ( uSize > 0 ) 
+	{
+		pConnect->m_sendBuffer.ReadData(buf, uSize);
+	}
 	int nLength = pConnect->m_sendBuffer.GetLength();
 	if ( 0 >= nLength ) 
 	{
@@ -515,7 +519,7 @@ connectState STNetEngine::SendData(STNetConnect *pConnect, unsigned short uSize)
 		pConnect->m_sendBuffer.ReadData(buf, nLength, false);
 		m_pNetMonitor->AddSend( pConnect->GetSocket()->GetSocket(), (char*)buf, nLength );
 	}
-	return ok;
+	return ok;	
 #else
 	connectState cs = wait_send;//默认为等待状态
 	//////////////////////////////////////////////////////////////////////////
@@ -568,6 +572,9 @@ connectState STNetEngine::SendData(STNetConnect *pConnect, unsigned short uSize)
 	结论：不会出现并发发送，也不会漏数据
 	*/
 	if ( !pConnect->SendStart() ) return cs;//已经在发送
+	//发送流程开始
+	pConnect->AddEpollSend();
+
 	return cs;
 #endif
 	return ok;
@@ -958,7 +965,6 @@ bool STNetEngine::EpollConnect( SVR_CONNECT **clientList, int clientCount )
 		if ( curtime - start < 20 ) return true;
 		start = -1;
 	}
-	if ( -1 == count ) printf( "epoll_wait return %d\n", count );
 	volatile int errCode = errno;//epoll_wait失败时状态
 
 	/*
@@ -1057,12 +1063,10 @@ bool STNetEngine::SelectConnect( SVR_CONNECT **clientList, int clientCount )
 		int errCode = GetLastError();
 		if ( SOCKET_ERROR == nSelectRet ) //出错时错误码和打印所有句柄状态
 		{
-			printf( "select return %d\n", nSelectRet );
 			for ( i = startPos; i < endPos; i++ )
 			{
 				pSvr = clientList[i];
 				svrSock = pSvr->sock;
-				printf( "select = %d errno(%d) sock(%d) read(%d) send(%d)\n", nSelectRet, errCode, svrSock, FD_ISSET(svrSock, &readfds), FD_ISSET(svrSock, &sendfds) );
 			}
 		}
 

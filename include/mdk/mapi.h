@@ -40,7 +40,7 @@ namespace mdk
 	unsigned int GetCUPNumber( int maxCpu, int defaultCpuNumber );
 	uint64 CurThreadId();//当前线程id
 	time_t mdk_Date();//返回0时0分0秒的当前日期
-	bool GetExeDir( char *exeDir, int size );//取得可执行程序位置
+	bool GetExeDir( char *exeDir, int size );//取得可执行程序位置,linux不带斜杠win下带斜杠
 	mdk::uint64 MillTime();//毫秒级当前时间
 }
 

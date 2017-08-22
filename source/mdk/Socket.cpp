@@ -462,30 +462,6 @@ bool Socket::TimeOut( long lSecond, long lMinSecond )
 	return false;
 }
 
-//功能：等待数据
-bool Socket::WaitData()
-{
-	int nSelectRet;
-#ifdef WIN32
-	FD_SET readfds = { 1, m_hSocket };
-	nSelectRet=::select( 0, &readfds, NULL, NULL, NULL ); //检查可读状态
-#else
-	fd_set readfds;
-	FD_ZERO(&readfds);
-	FD_SET(m_hSocket, &readfds);
-	nSelectRet=::select(m_hSocket+1, &readfds, NULL, NULL, NULL); //检查可读状态
-#endif
-	if ( SOCKET_ERROR == nSelectRet ) 
-	{
-		return false;
-	}
-	if ( 0 == nSelectRet ) //超时发生，无可读数据 
-	{
-		return false;
-	}
-	return true;
-}
-
 /*
 	功能：阻塞方式设置
 	参数：
