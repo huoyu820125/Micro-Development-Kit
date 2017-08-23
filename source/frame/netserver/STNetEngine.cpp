@@ -156,6 +156,7 @@ bool STNetEngine::LinuxIO( int timeout )
 	//继续进行m_ioList中的socket进行io操作
 	if ( 0 >= m_ioList.size() ) nCount = m_pNetMonitor->WaitEvent( timeout );
 	else nCount = m_pNetMonitor->WaitEvent( 0 );
+
 	if ( 0 > nCount ) return false;
 	//加入到m_ioList中
 	for ( i = 0; i < nCount; i++ )

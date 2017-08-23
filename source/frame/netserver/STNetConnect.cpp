@@ -164,6 +164,7 @@ bool STNetConnect::SendStart()
 void STNetConnect::SendEnd()
 {
 	m_nSendCount = 0;
+	m_monitorSend = false;//²»¼àÌý·¢ËÍ
 }
 
 void STNetConnect::Close()

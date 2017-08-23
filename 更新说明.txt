@@ -1,15 +1,8 @@
-V2.00(2017-8-18 17:34)
+V2.01(2017-8-23 13:45)
 1.修正单线程版本linue发送bug
-
-STNetEngine::SendData结束时，//发送流程开始，没有项epoll发起监听通知
-导致，后续数据没机会被发送，补上pConnect->AddEpollSend();
-
-2.优化epoll监听通知
-增加监听状态变量
-	bool m_monitorSend;//监听发送
-	bool m_monitorRecv;//监听接收
-增加监听方法
-	bool AddEpollSend();
-	bool AddEpollRecv();
-确保向epoll添加监听时，继承之前的add动作。
-避免因为添加recv/send监听，而覆盖之前的send/recv监听，导致没机会发送数据，或没机会接收数据
+//结束发送流程
+void STNetConnect::SendEnd()
+{
+	m_nSendCount = 0;
+	m_monitorSend = false;//不监听发送   增加此行，以免每次监听接收时都带上发送监听，导致无发送数据时，epoll一直立刻返回可发送状态，cpu吃到100% 
+}
